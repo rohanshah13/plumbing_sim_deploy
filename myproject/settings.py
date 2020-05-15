@@ -78,8 +78,8 @@ ASGI_APPLICATION = 'myproject.routing.application'
 CHANNEL_LAYERS = {
     'default' : {
         'BACKEND' : 'channels_redis.core.RedisChannelLayer',
-        'config' : {
-            'hosts' :  ['redis://h:p9766f87e7d091559ce713edffcff0551c60bcd2aa904154607d412230487bb10@ec2-34-233-160-99.compute-1.amazonaws.com:16489'],
+        'CONFIG' : {
+            'hosts' :  ["redis://h:p9766f87e7d091559ce713edffcff0551c60bcd2aa904154607d412230487bb10@ec2-34-233-160-99.compute-1.amazonaws.com:16489"],
         }
     }
 }
