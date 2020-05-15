@@ -11,9 +11,11 @@ class LoginComponent extends React.Component {
     this.state = {
       username : ''
     }
+
   }
 
   usernameChangeHandler = (event) => {
+    console.log(window.location.origin.replace(/^http/,'ws')+'/ws/sim')
     this.setState({
       username: event.target.value
     });
@@ -322,6 +324,7 @@ class App extends React.Component{
       loggedIn: true,
       username: username
     })
+
     WebSocketInstance.connect();
     this.waitForSocketConnection(() => { 
       WebSocketInstance.initUser(username);

@@ -17,7 +17,6 @@ class WebSocketService{
 
     connect(){
         const path = config.API_PATH;
-        console.log(path)
         this.socketRef = new WebSocket(path);
         
         this.socketRef.onmessage = e => {

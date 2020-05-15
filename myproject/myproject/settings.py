@@ -22,6 +22,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # SECURITY WARNING: keep the secret key used in production secret!
 #SECRET_KEY = 'xjw*$chf@_%5@dz&gg7%u_5ne!+wwgrkqq5b96z+ko04@afe&@'
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'xjw*$chf@_%5@dz&gg7%u_5ne!+wwgrkqq5b96z+ko04@afe&@')
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
@@ -128,16 +129,15 @@ USE_L10N = True
 
 USE_TZ = True
 
-
+REACT_APP = os.path.join(BASE_DIR, 'frontend')
+STATICFILES_DIRS = [
+	os.path.join(REACT_APP, 'builda', 'static'),
+] 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATIC_URL = '/static/'
 
-REACT_APP = os.path.join(BASE_DIR, 'frontend')
-STATICFILES_DIRS = (
-    os.path.join(os.path.join(BASE_DIR,'frontend'),'builda', 'static'),
-)
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 import dj_database_url
