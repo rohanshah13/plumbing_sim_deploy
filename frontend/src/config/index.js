@@ -1,5 +1,5 @@
 
-const API_PATH = 'ws://secure-garden-92806.herokuapp.com/ws/sim';
+var API_PATH = window.location.origin.replace(/^http/,'ws')
 
 export default {
     API_PATH
