@@ -1,5 +1,5 @@
 
-const API_PATH = 'ws://localhost:8000/ws/sim';
+const API_PATH = 'ws://secure-garden-92806.herokuapp.com/ws/sim';
 
 export default {
     API_PATH
