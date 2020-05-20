@@ -9,27 +9,27 @@ class LoginComponent extends React.Component {
   constructor(props) {
     super(props)
     this.state = {
-      username : ''
+      game_id : ''
     }
 
   }
 
-  usernameChangeHandler = (event) => {
-    console.log(window.location.origin.replace(/^http/,'ws')+'/ws/sim')
+  gameIdChangeHandler = (event) => {
+    //console.log(window.location.origin.replace(/^http/,'ws')+'/ws/sim')
     this.setState({
-      username: event.target.value
+      game_id: event.target.value
     });
   }
 
   render() {
     return(
       <div className="login">
-        <form onSubmit={(e) => this.props.handleLogin(e, this.state.username)}>
+        <form onSubmit={(e) => this.props.handleLogin(e, this.state.game_id)}>
           <input 
             type="text"
-            onChange = {this.usernameChangeHandler}
-            value = {this.state.username}
-            placeholder = "username"
+            onChange = {this.gameIdChangeHandler}
+            value = {this.state.game_id}
+            placeholder = "Game Id"
             required 
           />
           <button className="submit" type="submit">
@@ -43,23 +43,86 @@ class LoginComponent extends React.Component {
 
 }
 
-function Block(props){
+class CustomContext extends React.Component{
+ constructor(props) {
+ super(props);
+ 
+ this.state={
+ visible: false,
+ x: 0,
+ y: 0
+ };
+ }
+ 
+ componentDidMount(){
+ var self=this;
+ document.addEventListener('contextmenu', function(event){
+ event.preventDefault();
+ const clickX = event.clientX;
+ const clickY = event.clientY;
+ self.setState({ visible: true, x: clickX, y: clickY });
+ 
+ });
+ document.addEventListener('click', function(event){
+ event.preventDefault();
+ self.setState({ visible: false, x:0, y:0});
+ 
+ });
+ }
+ 
+ returnMenu(items){
+ var myStyle = {
+ 'position': 'absolute',
+ 'top': `${this.state.y}px`,
+ 'left':`${this.state.x+5}px`
+ }
+ 
+ return <div className='custom-context' id='text' style={myStyle}>
+ {items.map((item, index, arr) =>{
+ if(arr.length-1==index){
+ return <div key={index} className='custom-context-item-last'>{item.label}</div>
+ }else{
+ return <div key={index} className='custom-context-item'>{item.label}</div>
+ }
+ })}
+ </div>;
+ }
+   render() {
+    return  (<div id='cmenu'>
+        {this.state.visible ? this.returnMenu(this.props.items): null}
+    </div>
+    )
+  }
+}
+
+class Block extends React.Component{
+  render(){
   return (
-    <button className="square" style={{backgroundColor:props.color}} onClick={props.onClick}>
+    <button className="square" style={{background:this.props.color}} onClick={this.props.onClick} onContextMenu={this.props.onContextMenu}>
+    {this.props.pressure}
     </button>
   )
+  }
 }
 
 class Grid extends React.Component{
 
   renderBlock(i,j){
+  	//console.log(this.props.grid[i][j])
     let color = Colors[this.props.grid[i][j]]
+    let pressure = this.props.pressure[i][j];
     return <Block
       x={i}
       y={j}
       color={color}
       onClick={() => this.props.onClick(i,j)}
+      onContextMenu={(e) => this.handleContextMenu(e,i,j)}
+      pressure = {pressure}
     />
+  }
+
+  handleContextMenu = (e,i,j) => {
+    this.props.handleContextMenu(e,i,j)
   }
 
   renderRow(i,n){
@@ -148,28 +211,112 @@ function Reset(props){
   )
 }
 
+class SelectPipe extends React.Component{
+	constructor(props) {
+		super(props)
+		this.state = {
+			selectedOption: 'large'
+		}
+	}
+
+	handleChange = (e) => {
+		this.setState({
+			selectedOption: e.target.value
+		})
+		this.props.handleOptionChange(e);
+		
+	}
+
+	render() {
+		return(
+		<form>
+			<input type="radio" value="small" checked = {this.state.selectedOption=="small"} onChange = {this.handleChange} />
+				0.5 inch
+			
+			<input type="radio" value="medium" checked = {this.state.selectedOption=="medium"} onChange = {this.handleChange} />
+				0.75 inch
+		
+			<input type="radio" value="large" checked = {this.state.selectedOption=="large"} onChange = {this.handleChange} />
+				1 inch
+			
+		</form>
+		)
+	}
+}
+
+class ChangeInitialPressure extends React.Component{
+  
+  constructor(props) {
+    super(props)
+    this.state = {
+      initial_pressure: ''
+    }
+    this.handleChange = this.handleChange.bind(this)
+  }
+
+  handleChange(e) {
+    this.setState({
+      initial_pressure: e.target.value
+    });
+  }
+
+  render() {
+    return(
+      <form onSubmit={(e) => this.props.handlePressureChange(e,this.state.initial_pressure)}>
+        Enter initial pressure
+        <input type="text" onChange = {this.handleChange} />        
+        <button className="submit" type="submit">
+        Make change
+        </button>
+      </form>
+    )
+  }
+}
+
 class App extends React.Component{
 
   constructor(props) {
     super(props);
-    let size = 10
+    this.handleContextMenu = this.handleContextMenu.bind(this);
+    this.handleSizeChange = this.handleSizeChange.bind(this);
+    this.handleDeletePipe = this.handleDeletePipe.bind(this);
+    this.handlePressureChange = this.handlePressureChange.bind(this);
+    let size = 15
     let grid = []
     let row = size-1
     let col = 0
+    let pressure = []
     for(let i=0;i<size;i++){
       let row = Array(size).fill("blank")
+      let prow = Array(size).fill("")
+      pressure.push(prow)
       grid.push(row)
     }
+    pressure[row][col] = "60"
     grid[row][col] = "active"
     this.state = {
       size:size,
       grid: grid,
       row: row,
       col: col,
-      username: '',
-      loggedIn: false
+      game_id: '',
+      loggedIn: false,
+      pipe_size: 'large',
+      menuX: "100px",
+      menuY: "100px",
+      visible: false,
+      currBlockX: 0,
+      currBlockY: 0,
+      pressure: pressure,
+      initial_pressure: '60'
     };
    
+  }
+  componentDidMount(){
+    var self = this
+    document.addEventListener('click', function(event){
+      self.setState({visible: false});
+    });
   }
     waitForSocketConnection(callback) {
         const component = this;
@@ -188,148 +335,41 @@ class App extends React.Component{
     }
 
   handleDirectionClick(direction) {
-    let username = this.state.username
-    WebSocketInstance.directionClick(username,direction)
-    /*let row = this.state.row;
-    let col = this.state.col;
-    let size = this.state.size;
-    let grid = this.state.grid;
-    if(direction=="U"){
-      let destRow = row-3;
-      let valid = false;
-      if(destRow>=0){
-        if(grid[row-1][col]=="blank"&&grid[row-2][col]=="blank"&&grid[row-3][col]=="blank"){
-          valid = true;
-        }
-      }
-      if(valid){
-        grid[row][col] = "split";
-        grid[row-1][col] = "pipe";
-        grid[row-2][col] = "pipe";
-        grid[row-3][col] = "active";
-        row = destRow;
-        this.setState({
-          grid:grid,
-          row:row,
-        }) 
-      }
-         
-    }
-    else if(direction=="D"){
-      let destRow = row+3;
-      let valid = false;
-      if(destRow<size){
-        if(grid[row+1][col]=="blank"&&grid[row+2][col]=="blank"&&grid[row+3][col]=="blank"){
-          valid = true;
-        }
-      }
-      if(valid){
-        grid[row][col] = "split";
-        grid[row+1][col] = "pipe";
-        grid[row+2][col] = "pipe";
-        grid[row+3][col] = "active";
-        row = destRow;
-        this.setState({
-          grid:grid,
-          row:row,
-        }) 
-      }
-
-    }
-    else if(direction=="R"){
-      let destCol = col+3;
-      let valid = false;
-      if(destCol<size){
-        if(grid[row][col+1]=="blank"&&grid[row][col+2]=="blank"&&grid[row][col+3]=="blank"){
-          valid = true;
-        }
-      }
-      if(valid){
-        grid[row][col] = "split";
-        grid[row][col+1] = "pipe";
-        grid[row][col+2] = "pipe";
-        grid[row][col+3] = "active";
-        col = destCol;
-        this.setState({
-          grid:grid,
-          col:col,
-        }) 
-      }
-    }
-    else{
-      let destCol = col-3;
-      let valid = false;
-      if(destCol>=0){
-        if(grid[row][col-1]=="blank"&&grid[row][col-2]=="blank"&&grid[row][col-3]=="blank"){
-          valid = true;
-        }
-      }
-      if(valid){
-        grid[row][col] = "split";
-        grid[row][col-1] = "pipe";
-        grid[row][col-2] = "pipe";
-        grid[row][col-3] = "active";
-        col = destCol;
-        this.setState({
-          grid:grid,
-          col:col,
-        }) 
-      }
-
-    }*/
+    let game_id = this.state.game_id
+    let pipe_size = this.state.pipe_size
+    WebSocketInstance.directionClick(game_id,direction,pipe_size)
   }
 
   handleBlockClick(i,j){
-    let username = this.state.username
-    WebSocketInstance.blockClick(username,i,j)
-    /*let grid = this.state.grid;
-    let row = this.state.row;
-    let col = this.state.col;
-    if(grid[i][j]=="split"){
-      grid[i][j] = "active";
-      grid[row][col] = "split";
-      row = i;
-      col = j;
-      this.setState({
-        grid: grid,
-        row: row,
-        col: col,
-      })
-    }*/
+    let game_id = this.state.game_id
+    WebSocketInstance.blockClick(game_id,i,j)
   }
 
   handleReset(){
     console.log("reset")
-    WebSocketInstance.reset(this.state.username)
-    /*let grid = this.state.grid;
-    let size = this.state.size;
-    let row = size-1;
-    let col = 0;
-    for(let i=0;i<size;i++){
-      for(let j=0;j<size;j++){
-        grid[i][j] = "blank";
-      }
-    }
-    grid[row][col] = "active";
-    this.setState({
-      grid: grid,
-      row: row,
-      col: col,
-    })*/
+    WebSocketInstance.reset(this.state.game_id)
   }
 
-  handleLogin = (e,username) => {
+  handleLogin = (e,game_id) => {
     e.preventDefault();
     this.setState({
-      loggedIn: true,
-      username: username
+      //loggedIn: true,
+      game_id: game_id
     })
 
     WebSocketInstance.connect();
     this.waitForSocketConnection(() => { 
-      WebSocketInstance.initUser(username);
+      WebSocketInstance.initUser(game_id);
       WebSocketInstance.addCallbacks(this.gameUpdate.bind(this))
     });
+  }
+
+  handleOptionChange = (event) => {
+  	//event.preventDefault();
+  	console.log(event.target.value)
+  	this.setState({
+  		pipe_size: event.target.value
+  	})
   }
 
   gameUpdate(parsedData){
@@ -338,18 +378,67 @@ class App extends React.Component{
     const row = parsedData['row']
     const col = parsedData['col']
     const size = parsedData['size']
+    const pressure = parsedData['pressure']
+    const initial_pressure = parsedData['initial_pressure']
     this.setState({
+    	loggedIn: true,
       grid: grid,
       row: row,
-      col: col
+      col: col,
+      pressure: pressure,
+      initial_pressure: initial_pressure
     })
     
+  }
+
+  handleContextMenu(e,i,j){
+    const grid = this.state.grid;
+    if(grid[i][j].split("_")[0]=="pipe"){
+      e.preventDefault()
+      console.log(e.clientX,e.clientY)
+      console.log(i,j)
+      this.setState({
+        menuX: e.clientX,
+        menuY: e.clientY,
+        visible: true,
+        currBlockX: i,
+        currBlockY: j,
+      })
+    }
+  }
+
+  handleDeletePipe(e) {
+    let game_id = this.state.game_id
+    let i = this.state.currBlockX
+    let j = this.state.currBlockY
+    WebSocketInstance.deletePipe(game_id,i,j)
+  }
+
+  handleSizeChange(event) {
+    let size = event.target.value
+    let game_id = this.state.game_id
+    let i = this.state.currBlockX
+    let j = this.state.currBlockY
+    WebSocketInstance.changeSize(game_id,i,j,size);
+  }
+
+  handlePressureChange(event,val){
+    event.preventDefault()
+    let game_id = this.state.game_id
+    let initial_pressure = +val
+    if(Number.isInteger(initial_pressure)&&initial_pressure>0){
+      WebSocketInstance.changePressure(game_id,initial_pressure)
+    }
+    else{
+      alert('Enter a positive integer')
+    }
   }
 
   render() {
     const size = this.state.size
     const grid = this.state.grid
     const loggedIn = this.state.loggedIn
+    const pressure = this.state.pressure
     return(
        loggedIn ?
       <div>
@@ -357,15 +446,42 @@ class App extends React.Component{
           size={size}
           grid={grid}
           onClick = {(i,j) => this.handleBlockClick(i,j)}
+          handleContextMenu = {this.handleContextMenu}
+          pressure = {pressure}
         />
         <Controls
           onClick = {(direction) => this.handleDirectionClick(direction)}
         />
+        <SelectPipe
+        	handleOptionChange = {this.handleOptionChange}
+        	selectedOption = {this.state.pipe_size}
+        />
+        <ChangeInitialPressure 
+          handlePressureChange = {this.handlePressureChange} />
         <Reset
           onClick = {() => this.handleReset()}
         />
+        {this.state.visible &&
+          <div style={{position:"absolute", top:this.state.menuY, left:this.state.menuX}}>
+
+            <button onClick={this.handleDeletePipe} value="del">
+            Delete pipe
+            </button>
+            <button onClick={this.handleSizeChange} value="large">
+            Change to 1 inch
+            </button>
+            <button onClick={this.handleSizeChange} value="medium">
+            Change to 0.75 inch
+            </button>
+            <button onClick={this.handleSizeChange} value="small">
+            Change to 0.5 inch
+            </button>
+            </div>
+        }
+
+
       </div>
-      :
+            :
       <LoginComponent
         handleLogin = {this.handleLogin} />
     )

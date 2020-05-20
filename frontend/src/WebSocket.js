@@ -54,20 +54,29 @@ class WebSocketService{
         }
     }
 
-    initUser(username){
-    	this.sendMessage({command : 'init', username : username})
+    initUser(game_id){
+    	this.sendMessage({command : 'init', game_id : game_id})
     }
 
-    reset(username){
-    	this.sendMessage({command: 'reset', username: username})
+    reset(game_id){
+    	this.sendMessage({command: 'reset', game_id: game_id})
     }
 
-    blockClick(username,i,j){
-    	this.sendMessage({command: 'block_click', username: username, i:i, j:j})
+    blockClick(game_id,i,j){
+    	this.sendMessage({command: 'block_click', game_id: game_id, i:i, j:j})
     }
 
-    directionClick(username,direction){
-    	this.sendMessage({command: 'direction_click', username: username, direction:direction })
+    directionClick(game_id,direction,pipe_size){
+    	this.sendMessage({command: 'direction_click', game_id: game_id, direction:direction, pipe_size: pipe_size })
+    }
+    changeSize(game_id,i,j,pipe_size){
+        this.sendMessage({command: 'change_size', game_id: game_id, i:i, j:j, pipe_size:pipe_size})
+    }
+    deletePipe(game_id,i,j){
+        this.sendMessage({command: 'delete_pipe', game_id: game_id, i:i, j:j})
+    }
+    changePressure(game_id,initial_pressure){
+        this.sendMessage({command: 'change_init_pressure', game_id: game_id, initial_pressure: initial_pressure})
     }
     addCallbacks(gameCallback){
         this.callbacks['game'] = gameCallback;
