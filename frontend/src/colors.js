@@ -15,6 +15,7 @@ Colors["pipe_L_small"] = "linear-gradient(to bottom, white 33%,red 34%, white 67
 Colors["pipe_R_small"] = "linear-gradient(to bottom, white 33%,red 34%, white 67%)"
 Colors["split"] = "black"
 
+
 export default Colors;
 
 //"linear-gradient(to right, white 20%,red 21%, white 81%)"
