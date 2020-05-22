@@ -281,7 +281,7 @@ class App extends React.Component{
     this.handleSizeChange = this.handleSizeChange.bind(this);
     this.handleDeletePipe = this.handleDeletePipe.bind(this);
     this.handlePressureChange = this.handlePressureChange.bind(this);
-    let size = 15
+    let size = 22
     let grid = []
     let row = size-1
     let col = 0
@@ -308,7 +308,8 @@ class App extends React.Component{
       currBlockX: 0,
       currBlockY: 0,
       pressure: pressure,
-      initial_pressure: '60'
+      initial_pressure: '60',
+      cost: 0,
     };
    
   }
@@ -380,13 +381,15 @@ class App extends React.Component{
     const size = parsedData['size']
     const pressure = parsedData['pressure']
     const initial_pressure = parsedData['initial_pressure']
+    const cost = parsedData['cost']
     this.setState({
     	loggedIn: true,
       grid: grid,
       row: row,
       col: col,
       pressure: pressure,
-      initial_pressure: initial_pressure
+      initial_pressure: initial_pressure,
+      cost: cost
     })
     
   }
@@ -439,6 +442,7 @@ class App extends React.Component{
     const grid = this.state.grid
     const loggedIn = this.state.loggedIn
     const pressure = this.state.pressure
+    const cost = this.state.cost
     return(
        loggedIn ?
       <div>
@@ -461,6 +465,10 @@ class App extends React.Component{
         <Reset
           onClick = {() => this.handleReset()}
         />
+        <div>
+        <h1>Cost</h1>
+        <h3>{cost}</h3>
+        </div>
         {this.state.visible &&
           <div style={{position:"absolute", top:this.state.menuY, left:this.state.menuX}}>
 
