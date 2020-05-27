@@ -1,6 +1,6 @@
 .square {
   background: #fff;
-  border: 1px solid #999;
+  border: 0px solid #999;
   float: left;
   font-size: 24px;
   font-weight: bold;
@@ -10,22 +10,33 @@
   margin-top: -1px;
   padding: 0;
   text-align: center;
-  width: 34px;
+  width: 4.55%;
   color: #fff;
+}
+
+.rowC{display:flex; flex-direction:row;
+  background-color: lightblue; padding: 10px}
+
+.add{
+  display:flex;
+  flex-direction: row;
 }
 
 .board-row:after {
   clear: both;
   content: "";
   display: table;
+  width: 100%;
+  height:4.55%;
 }
 
 .direction {
-  background: #fff;
+  background: lightbrown;
   border: 1px solid #999;
   font-size: 24px;
   height: 50px;
-  width: 50px;
+  max-width: 100px;
+  width: 33%;
   font-weight: bold;
 }
 
@@ -33,14 +44,67 @@
   background: #fff;
   border: 0px;
   height: 50px;
-  width: 50px;
+  max-width: 100px;
+  width: 33%;
+  opacity: 0;
 }
 
 .reset {
-  background: #fff;
+  background: red;
   border: 1px solid #999;
   font-size: 40px;
   height: 50px;
   width: 130px;
   font-weight: bold;
+}
+
+.lhs{
+  width: 50%;
+  padding: 50px;
+  display:flex;
+  flex-direction: row;
+}
+
+/* Style inputs */
+label {
+  width: 100%;
+  display: inline-block;
+  border: 1px solid #ccc;
+  vertical-align: middle;
+  font-size: 25px;
+}
+
+
+
+.grid{
+    position: relative;
+    width: 50%;
+    overflow: hidden;
+    max-width: 748px;
+}
+
+.resetdiv{
+  margin-top: 30px;
+  
+}
+
+.controls{
+  width: 100%;
+}
+
+.gridx{
+  
+
+      position:  absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    color: white;
+    text-align: center;
+}
+
+.gridx:before {
+      display: block;
+    padding-top: 100%;
 }

@@ -3,7 +3,7 @@ import json
 from sim.models import Game
 from asgiref.sync import async_to_sync
 from channels.db import database_sync_to_async
-from sim.constants import Cost
+from sim.constants import Cost, Grids
 
 class MyConsumer(AsyncWebsocketConsumer):
 
@@ -26,10 +26,13 @@ class MyConsumer(AsyncWebsocketConsumer):
 	def __init__(self,x):
 		super(MyConsumer,self).__init__(x)
 		self.game_id = ''
+		self.budget = ''
+		self.grid_size = ''
 
 	async def init_game(self,data):
 		game_id = data['game_id']
-		
+		budget = data['budget']
+		grid_size = data['grid_size']
 		if await self.check(game_id):
 			content = {
 				'command' : 'fail'
@@ -37,39 +40,43 @@ class MyConsumer(AsyncWebsocketConsumer):
 			await self.send(text_data=json.dumps(content))
 		else:
 			self.game_id = game_id
+			self.budget = budget
+			self.grid_size = grid_size
 			pressure = []
-			grid = []
-			size = 22
+			grid = Grids[grid_size]
+			size = len(grid[0])
 			for i in range(size):
-				row = []
+				#row = []
 				prow = []
 				for j in range(size):
-					row.append('blank')
+					#row.append('blank')
 					prow.append('')
-				grid.append(row)
+				#grid.append(row)
 				pressure.append(prow)
 			row = size-1
 			col = 0
+			#print(len(grid),row,col)
 			grid[row][col] = 'active'
+			#print(grid[row][col])
 			pressure[row][col] = '60'
 			json_grid = json.dumps(grid)
 			json_pressure = json.dumps(pressure)
-			game = Game(game_id=game_id,size=size,row=row,col=col,grid=json_grid,pressure=json_pressure)
+			game = Game(game_id=game_id,size=size,row=row,col=col,grid=json_grid,pressure=json_pressure,budget=budget)
 			await self.save(game)
 			await self.sendMessage(grid,size,row,col,pressure,game.initial_pressure,game.cost)
 		
 	async def reset(self,data):
 		game_id = data['game_id']
 		pressure = []
-		grid = []
-		size = 22
+		grid = Grids[self.grid_size]
+		size = len(grid[0])
 		for i in range(size):
 			row = []
 			prow = []
 			for j in range(size):
 				row.append('blank')
 				prow.append('')
-			grid.append(row)
+			#grid.append(row)
 			pressure.append(prow)
 		row = size-1
 		col = 0
@@ -187,13 +194,13 @@ class MyConsumer(AsyncWebsocketConsumer):
 
 	async def emptySplit(self,i,j,grid,size):
 		ret = True
-		if i+1<size and grid[i+1][j] != 'blank':
+		if i+1<size and grid[i+1][j].split('_')[0] == 'pipe':
 			ret = False
-		if i-1>=0 and grid[i-1][j] != 'blank':
+		if i-1>=0 and grid[i-1][j].split('_')[0] == 'pipe':
 			ret = False
-		if j+1<size and grid[i][j+1] != 'blank':
+		if j+1<size and grid[i][j+1].split('_')[0] == 'pipe':
 			ret = False
-		if j-1>=0 and grid[i][j-1] != 'blank':
+		if j-1>=0 and grid[i][j-1].split('_')[0] == 'pipe':
 			ret = False
 		return ret
 
@@ -244,13 +251,13 @@ class MyConsumer(AsyncWebsocketConsumer):
 		while queue:
 			u = queue.pop(0)
 			visited[u[0]][u[1]] = True			
-			if u[0]+1<size and grid[u[0]+1][u[1]]!='blank' and (not visited[u[0]+3][u[1]]):
+			if u[0]+1<size and grid[u[0]+1][u[1]].split('_')[0]=='pipe' and (not visited[u[0]+3][u[1]]):
 				queue.append((u[0]+3,u[1]))
-			if u[0]-1>=0 and grid[u[0]-1][u[1]]!='blank' and (not visited[u[0]-3][u[1]]):
+			if u[0]-1>=0 and grid[u[0]-1][u[1]].split('_')[0]=='pipe' and (not visited[u[0]-3][u[1]]):
 				queue.append((u[0]-3,u[1]))
-			if u[1]+1<size and grid[u[0]][u[1]+1]!='blank' and (not visited[u[0]][u[1]+3]):
+			if u[1]+1<size and grid[u[0]][u[1]+1].split('_')[0]=='pipe' and (not visited[u[0]][u[1]+3]):
 				queue.append((u[0],u[1]+3))
-			if u[1]-1>=0 and grid[u[0]][u[1]-1]!='blank' and (not visited[u[0]][u[1]-3]):
+			if u[1]-1>=0 and grid[u[0]][u[1]-1].split('_')[0]=='pipe' and (not visited[u[0]][u[1]-3]):
 				queue.append((u[0],u[1]-3))
 		if visited[xpos][ypos]:
 			return False
@@ -259,15 +266,15 @@ class MyConsumer(AsyncWebsocketConsumer):
 
 	async def is_junction(self,grid,i,j,size):
 		ret = False
-		if (i+1<size and grid[i+1][j] != 'blank') or (i-1>=0 and grid[i-1][j] != 'blank'):
-			if (j+1<size and grid[i][j+1] != 'blank') or (j-1>=0 and grid[i][j-1] != 'blank'):
+		if (i+1<size and grid[i+1][j].split('_')[0] == 'pipe') or (i-1>=0 and grid[i-1][j].split('_')[0] == 'pipe'):
+			if (j+1<size and grid[i][j+1].split('_')[0] == 'pipe') or (j-1>=0 and grid[i][j-1].split('_')[0] == 'pipe'):
 				ret = True
 		return ret
 
 	async def direction_click(self,data):
 		game_id = data['game_id']
 		game = await self.get_game(game_id)
-		direction = data['direction']
+		direction = data['direction'][0]
 		pipe_size = data['pipe_size']
 		row = game.row
 		col = game.col
@@ -366,19 +373,19 @@ class MyConsumer(AsyncWebsocketConsumer):
 			u = queue.pop(0)
 			visited[u[0]][u[1]] = True
 			current_pressure = int(pressure[u[0]][u[1]])
-			if u[0]+1<size and grid[u[0]+1][u[1]]!='blank' and (not visited[u[0]+3][u[1]]):
+			if u[0]+1<size and grid[u[0]+1][u[1]].split('_')[0]=='pipe' and (not visited[u[0]+3][u[1]]):
 				pipe_size = grid[u[0]+1][u[1]].split('_')[2]
 				pressure[u[0]+3][u[1]] = str(max(current_pressure - pressure_drop[pipe_size],0))
 				queue.append((u[0]+3,u[1]))
-			if u[0]-1>=0 and grid[u[0]-1][u[1]]!='blank' and (not visited[u[0]-3][u[1]]):
+			if u[0]-1>=0 and grid[u[0]-1][u[1]].split('_')[0]=='pipe' and (not visited[u[0]-3][u[1]]):
 				pipe_size = grid[u[0]-1][u[1]].split('_')[2]
 				pressure[u[0]-3][u[1]] = str(max(current_pressure - pressure_drop[pipe_size],0))
 				queue.append((u[0]-3,u[1]))
-			if u[1]+1<size and grid[u[0]][u[1]+1]!='blank' and (not visited[u[0]][u[1]+3]):
+			if u[1]+1<size and grid[u[0]][u[1]+1].split('_')[0]=='pipe' and (not visited[u[0]][u[1]+3]):
 				pipe_size = grid[u[0]][u[1]+1].split('_')[2]
 				pressure[u[0]][u[1]+3] = str(max(current_pressure - pressure_drop[pipe_size],0))
 				queue.append((u[0],u[1]+3))
-			if u[1]-1>=0 and grid[u[0]][u[1]-1]!='blank' and (not visited[u[0]][u[1]-3]):
+			if u[1]-1>=0 and grid[u[0]][u[1]-1].split('_')[0]=='pipe' and (not visited[u[0]][u[1]-3]):
 				pipe_size = grid[u[0]][u[1]-1].split('_')[2]
 				pressure[u[0]][u[1]-3] = str(max(current_pressure - pressure_drop[pipe_size],0))
 				queue.append((u[0],u[1]-3))
@@ -396,6 +403,7 @@ class MyConsumer(AsyncWebsocketConsumer):
 			'pressure': pressure,
 			'initial_pressure': initial_pressure,
 			'cost': cost,
+			'budget': self.budget
 		}
 		await self.send(text_data=json.dumps(content))
 

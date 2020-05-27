@@ -9,7 +9,9 @@ class LoginComponent extends React.Component {
   constructor(props) {
     super(props)
     this.state = {
-      game_id : ''
+      game_id : '',
+      budget : '',
+      grid_size: 'mid',
     }
 
   }
@@ -21,17 +23,44 @@ class LoginComponent extends React.Component {
     });
   }
 
+  budgetChangeHandler = (event) => {
+    this.setState({
+      budget: event.target.value
+    });
+    //console.log(this.state.budget)
+  }
+
+  sizeChangeHandler = (event) => {
+    this.setState({
+      grid_size: event.target.value
+    });
+  }
+
   render() {
     return(
       <div className="login">
-        <form onSubmit={(e) => this.props.handleLogin(e, this.state.game_id)}>
-          <input 
+        <form onSubmit={(e) => this.props.handleLogin(e, this.state.game_id, this.state.budget, this.state.grid_size)}>
+          Enter an ID for your Game: <input 
             type="text"
             onChange = {this.gameIdChangeHandler}
             value = {this.state.game_id}
             placeholder = "Game Id"
             required 
           />
+          Enter your budget<input
+            type="number"
+            onChange = {this.budgetChangeHandler}
+            value = {this.state.budget}
+            min = "0"
+            step = "1"
+            required
+          /> 
+          Large
+          <input type="radio" checked = {this.state.grid_size=="large"} value = "large" onChange = {this.sizeChangeHandler} />
+          Medium
+          <input type="radio" checked = {this.state.grid_size=="mid"} value = "mid" onChange = {this.sizeChangeHandler} />
+          Small
+          <input type="radio" checked = {this.state.grid_size=="small"} value = "small" onChange = {this.sizeChangeHandler} />
           <button className="submit" type="submit">
             Let's Go
           </button>
@@ -144,7 +173,7 @@ class Grid extends React.Component{
   render(){
     const n = this.props.size;
     return(
-      <div>
+      <div className="gridx">
         {this.renderGrid(n)}
       </div>
     )
@@ -182,20 +211,21 @@ class Controls extends React.Component{
 
   render() {
     return(
-      <div>
+      <div className="controls">
+        <h1><p>Pipe Direction</p></h1>
         <div className="board-row">
           {this.renderBlank()}
-          {this.renderDirection("U")}
+          {this.renderDirection("Up")}
           {this.renderBlank()}
         </div>
         <div className="board-row">
-          {this.renderDirection("L")}
+          {this.renderDirection("Left")}
           {this.renderBlank()}
-          {this.renderDirection("R")}
+          {this.renderDirection("Right")}
         </div>
         <div className="board-row">
           {this.renderBlank()}
-          {this.renderDirection("D")}
+          {this.renderDirection("Down")}
           {this.renderBlank()}
         </div>
       </div>
@@ -205,9 +235,11 @@ class Controls extends React.Component{
 
 function Reset(props){
   return(
+    <div className="resetdiv">
     <button className="reset" onClick={props.onClick}>
       Reset
     </button>
+    </div>
   )
 }
 
@@ -229,17 +261,24 @@ class SelectPipe extends React.Component{
 
 	render() {
 		return(
+    <div className="gen">
 		<form>
-			<input type="radio" value="small" checked = {this.state.selectedOption=="small"} onChange = {this.handleChange} />
-				0.5 inch
-			
-			<input type="radio" value="medium" checked = {this.state.selectedOption=="medium"} onChange = {this.handleChange} />
-				0.75 inch
-		
-			<input type="radio" value="large" checked = {this.state.selectedOption=="large"} onChange = {this.handleChange} />
-				1 inch
+      <h1>Pipe Size</h1>
+      <label for="small">
+			<input id="small" type="radio" value="small" checked = {this.state.selectedOption=="small"} onChange = {this.handleChange} />
+      0.5 inch
+			</label>
+			<label for = "medium">   
+			<input id="medium" type="radio" value="medium" checked = {this.state.selectedOption=="medium"} onChange = {this.handleChange} />
+      0.75 inch
+		  </label>
+      <label for="large">
+			<input id="large" type="radio" value="large" checked = {this.state.selectedOption=="large"} onChange = {this.handleChange} />
+      1 inch
+      </label>
 			
 		</form>
+    </div>
 		)
 	}
 }
@@ -263,7 +302,7 @@ class ChangeInitialPressure extends React.Component{
   render() {
     return(
       <form onSubmit={(e) => this.props.handlePressureChange(e,this.state.initial_pressure)}>
-        Enter initial pressure
+        <h1>Change Initial Pressure</h1>
         <input type="text" onChange = {this.handleChange} />        
         <button className="submit" type="submit">
         Make change
@@ -310,6 +349,7 @@ class App extends React.Component{
       pressure: pressure,
       initial_pressure: '60',
       cost: 0,
+      budget: 0,
     };
    
   }
@@ -351,16 +391,17 @@ class App extends React.Component{
     WebSocketInstance.reset(this.state.game_id)
   }
 
-  handleLogin = (e,game_id) => {
+  handleLogin = (e,game_id,budget,grid_size) => {
     e.preventDefault();
     this.setState({
       //loggedIn: true,
-      game_id: game_id
+      game_id: game_id,
+      budget: budget
     })
-
+    console.log(budget)
     WebSocketInstance.connect();
     this.waitForSocketConnection(() => { 
-      WebSocketInstance.initUser(game_id);
+      WebSocketInstance.initUser(game_id,budget,grid_size);
       WebSocketInstance.addCallbacks(this.gameUpdate.bind(this))
     });
   }
@@ -382,6 +423,7 @@ class App extends React.Component{
     const pressure = parsedData['pressure']
     const initial_pressure = parsedData['initial_pressure']
     const cost = parsedData['cost']
+    const budget = parsedData['budget']
     this.setState({
     	loggedIn: true,
       grid: grid,
@@ -389,7 +431,9 @@ class App extends React.Component{
       col: col,
       pressure: pressure,
       initial_pressure: initial_pressure,
-      cost: cost
+      cost: cost,
+      budget: budget,
+      size: size,
     })
     
   }
@@ -443,32 +487,50 @@ class App extends React.Component{
     const loggedIn = this.state.loggedIn
     const pressure = this.state.pressure
     const cost = this.state.cost
+    const budget = this.state.budget
+    const color = budget>=cost ? "green" : "red"
+    console.log(grid[size-1][1])
     return(
        loggedIn ?
-      <div>
-        <Grid 
-          size={size}
-          grid={grid}
-          onClick = {(i,j) => this.handleBlockClick(i,j)}
-          handleContextMenu = {this.handleContextMenu}
-          pressure = {pressure}
-        />
-        <Controls
-          onClick = {(direction) => this.handleDirectionClick(direction)}
-        />
-        <SelectPipe
-        	handleOptionChange = {this.handleOptionChange}
-        	selectedOption = {this.state.pipe_size}
-        />
-        <ChangeInitialPressure 
-          handlePressureChange = {this.handlePressureChange} />
-        <Reset
-          onClick = {() => this.handleReset()}
-        />
-        <div>
-        <h1>Cost</h1>
-        <h3>{cost}</h3>
+      <div className = 'rowC '>
+
+        
+        <div className='grid'>
+          <Grid 
+            size={size}
+            grid={grid}
+            onClick = {(i,j) => this.handleBlockClick(i,j)}
+            handleContextMenu = {this.handleContextMenu}
+            pressure = {pressure}
+          />
         </div>
+        <div className='lhs'>       
+          <div>
+            <h1>Add a Pipe</h1>
+            <Controls
+              onClick = {(direction) => this.handleDirectionClick(direction)}
+            />
+            <SelectPipe
+            	handleOptionChange = {this.handleOptionChange}
+            	selectedOption = {this.state.pipe_size}
+            />
+          
+            <ChangeInitialPressure 
+              handlePressureChange = {this.handlePressureChange} />
+            <Reset
+              onClick = {() => this.handleReset()}
+            />
+          </div>
+          <div>
+            <h1>Budget</h1>
+            <h2>{budget}</h2>
+            <h1>Money Spent</h1>
+            <h2><p style={{color:color}}>{cost}</p></h2>
+            <h1>Money Remaining</h1>
+            <h2><p style={{color:color}}>{budget-cost}</p></h2>
+          </div>
+        </div>
+
         {this.state.visible &&
           <div style={{position:"absolute", top:this.state.menuY, left:this.state.menuX}}>
 
