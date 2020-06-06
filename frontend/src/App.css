@@ -28,8 +28,8 @@ input[type=text]{
   margin:0;
   padding:0;
   font-size: 0;
-  height: 33.33%;
-  width: 33.33%;
+  height: 33.33333333333%;
+  width: 33.33333333333%;
   font-weight: bold;
   float:left;
   background-color: gray;
@@ -44,11 +44,15 @@ input[type=text]{
 }
 
 .blank {
-  height: 33.33%;
-  width: 33.33%;
-  padding:0;
   margin:0;
+  padding:0;
+  font-size: 0;
+  height: 33.33333333333%;
+  width: 33.33333333333%;
+  font-weight: bold;
   float:left;
+  background-color: gray;
+  opacity: 15%;
 }
 
 .reset {
