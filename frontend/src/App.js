@@ -214,9 +214,7 @@ function Reset(props){
     	Reset
     </div>
     <div className="resetdiv-rhs">
-	    <button className="reset" onClick={props.onClick}>
-	      Reset
-	    </button>
+	    <button className="submit1" onClick={props.onClick}>Reset</button>
     </div>
     </div>
   )
@@ -245,20 +243,19 @@ class SelectPipe extends React.Component{
     		Pipe Size
     	</div>
     	<div className="size-rhs">
-		<form>    		
-      		<label for="small">
-			<input id="small" type="radio" value="small" checked = {this.state.selectedOption=="small"} onChange = {this.handleChange} />
-      			0.5 inch
-			</label>
-			<label for = "medium">   
-			<input id="medium" type="radio" value="medium" checked = {this.state.selectedOption=="medium"} onChange = {this.handleChange} />
-     			0.75 inch
-		 	</label>
-      		<label for="large">
-			<input id="large" type="radio" value="large" checked = {this.state.selectedOption=="large"} onChange = {this.handleChange} />
-      			1 inch
-      		</label>
-		</form>
+		   		
+    <div className="inputdiv">
+		<label for="small"><input id="small" type="radio" value="small" checked = {this.state.selectedOption=="small"} onChange = {this.handleChange} />0.5 inch</label>
+		</div>
+    <div className="inputdiv">	  
+		<label for = "medium"><input id="medium" type="radio" value="medium" checked = {this.state.selectedOption=="medium"} onChange = {this.handleChange} />
+    0.75 inch</label>
+    </div>
+    <div className="inputdiv">  		
+		<label for="large"><input id="large" type="radio" value="large" checked = {this.state.selectedOption=="large"} onChange = {this.handleChange} />
+      1 inch</label>
+    </div>		
+    
 		</div>
     </div>
 		)
@@ -289,10 +286,12 @@ class ChangeInitialPressure extends React.Component{
 	      </div>
 	      <div className="init-pressure-rhs">	
 	      <form onSubmit={(e) => this.props.handlePressureChange(e,this.state.initial_pressure)}>
-	        <input type="text" onChange = {this.handleChange} className="pressure-input" />       
+	        <div className="pdisplay">
+          <input type="text" onChange = {this.handleChange} className="pressure-input" />       
 	        <button className="submit" type="submit">
 	        Apply
 	        </button>
+          </div>
 	      </form>
 	      </div>
 	    </div>
