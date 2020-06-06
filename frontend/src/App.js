@@ -45,17 +45,17 @@ class LoginComponent extends React.Component {
         <div className="login-form">
         <form onSubmit={(e) => this.props.handleLogin(e, this.state.game_id, this.state.budget, this.state.grid_size)}>
           <div className="login-comp">         
-          Simulation ID<br /> <input 
+          Simulation ID<br /><div className="login-inputbox"><input 
             type="text"
             onChange = {this.gameIdChangeHandler}
             value = {this.state.game_id}
             placeholder = "Simulation Id"
             required 
             className="login-input"
-          />
+          /></div>
           </div>
           <div className="login-comp">
-          Budget <br /><input
+          Budget <br /><div className="login-inputbox"><input
             type="number"
             onChange = {this.budgetChangeHandler}
             value = {this.state.budget}
@@ -64,7 +64,7 @@ class LoginComponent extends React.Component {
             placeholder = "Budget"
             required
             className="login-input"
-          />
+          /></div>
           </div>
           <div className="login-comp">
           Grid Size<br /> 

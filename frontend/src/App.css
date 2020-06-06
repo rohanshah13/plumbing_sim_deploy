@@ -292,6 +292,11 @@ label {
   padding: 1vw;
   font-size: min(2vw,25px);
 }
+.login-inputbox{
+  display: flex;
+  justify-content: center;
+  padding: 0vw;
+}
 .size-options{
   text-indent: 1vw;
 }
