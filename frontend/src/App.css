@@ -52,7 +52,7 @@ input[type=text]{
   font-weight: bold;
   float:left;
   background-color: gray;
-  opacity: 15%;
+  opacity: 0.15;
 }
 
 .reset {
