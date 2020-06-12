@@ -270,12 +270,21 @@ class ChangeInitialPressure extends React.Component{
       initial_pressure: ''
     }
     this.handleChange = this.handleChange.bind(this)
+    this.handleSubmit = this.handleSubmit.bind(this)
   }
 
   handleChange(e) {
     this.setState({
       initial_pressure: e.target.value
     });
+  }
+
+  handleSubmit(e) {
+    let pressure = this.state.initial_pressure;
+    this.setState({
+      initial_pressure: ''
+    })
+    this.props.handlePressureChange(e,pressure)
   }
 
   render() {
@@ -285,9 +294,9 @@ class ChangeInitialPressure extends React.Component{
 	      	Change Initial Pressure
 	      </div>
 	      <div className="init-pressure-rhs">	
-	      <form onSubmit={(e) => this.props.handlePressureChange(e,this.state.initial_pressure)}>
+	      <form onSubmit={(e) => this.handleSubmit(e)}>
 	        <div className="pdisplay">
-          <input type="text" onChange = {this.handleChange} className="pressure-input" />       
+          <input type="text" onChange = {this.handleChange} className="pressure-input" value={this.state.initial_pressure} />       
 	        <button className="submit" type="submit">
 	        Apply
 	        </button>
@@ -531,8 +540,13 @@ class App extends React.Component{
           />
         
         <div className='lhs'>       
-          	<div className='title1'>
-            Add a Pipe
+            <div className="budget">
+              <div className="budget-lhs">
+                Budget
+              </div>
+              <div className="budget-rhs">  
+                {budget}
+              </div>
             </div>
             <Controls
               onClick = {(direction) => this.handleDirectionClick(direction)}
@@ -540,36 +554,30 @@ class App extends React.Component{
             <SelectPipe
             	handleOptionChange = {this.handleOptionChange}
             	selectedOption = {this.state.pipe_size}
-            />          
+            />
+            <div className="money-spent">
+              <div className="money-spent-lhs">
+                Money Spent
+              </div>
+              <div className="money-spent-rhs" style={{color:color}}>
+                {cost}
+              </div>
+            </div>
+            <div className="money-rem">
+              <div className="money-rem-lhs">
+                Money Remaining
+              </div>
+              <div className="money-rem-rhs" style={{color:color}}>
+                {budget-cost}
+              </div>
+            </div>           
             <ChangeInitialPressure 
               handlePressureChange = {this.handlePressureChange} />
             <Reset
               onClick = {() => this.handleReset()}
             />
-            <div className="budget">
-            	<div className="budget-lhs">
-            		Budget
-            	</div>
-            	<div className="budget-rhs">	
-            		{budget}
-            	</div>
-            </div>
-            <div className="money-spent">
-            	<div className="money-spent-lhs">
-            		Money Spent
-            	</div>
-            	<div className="money-spent-rhs" style={{color:color}}>
-            		{cost}
-            	</div>
-            </div>
-            <div className="money-rem">
-            	<div className="money-rem-lhs">
-            		Money Remaining
-            	</div>
-            	<div className="money-rem-rhs" style={{color:color}}>
-            		{budget-cost}
-            	</div>
-            </div>          
+            
+                     
         </div>
 
         {this.state.visible &&

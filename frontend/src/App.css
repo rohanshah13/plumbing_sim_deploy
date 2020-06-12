@@ -138,7 +138,7 @@ text-indent: -.5vw;
   height: 20%;
   display: flex;
   flex-direction: row;
-  
+  border-bottom: 1px solid black;
 }
 .size-lhs{
   display: flex;
@@ -211,8 +211,9 @@ text-indent: -.5vw;
   
   align-items: center;
 }
-.money-rem{
-  border:0px;
+.budget, .money-rem{
+  border-bottom: 1px solid black;
+  border-bottom: 1px solid black;
 }
 .budget-lhs, .money-rem-lhs, .money-spent-lhs{
   display: flex;
