@@ -36,6 +36,7 @@ class LoginComponent extends React.Component {
     });
   }
 
+
   render() {
     return(
       <div className="login">
@@ -88,7 +89,9 @@ class LoginComponent extends React.Component {
           <button className="submit" type="submit" className="login-submit-button">
           Start
           </button>
+          
           </div>
+
         </form>
         </div>
       </div>
@@ -514,6 +517,11 @@ class App extends React.Component{
     }
   }
 
+  handleReport(event){
+  	console.log('report')
+  	WebSocketInstance.report()
+  }
+
   render() {
     const size = this.state.size
     const grid = this.state.grid
@@ -576,7 +584,9 @@ class App extends React.Component{
             <Reset
               onClick = {() => this.handleReset()}
             />
-            
+             <button className="report" onClick={this.handleReport}>
+          Hi 
+          </button>
                      
         </div>
 

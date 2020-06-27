@@ -4,6 +4,7 @@ from sim.models import Game
 from asgiref.sync import async_to_sync
 from channels.db import database_sync_to_async
 from sim.constants import Cost, Grids
+from postgres_copy import CopyManager
 
 class MyConsumer(AsyncWebsocketConsumer):
 
@@ -28,6 +29,12 @@ class MyConsumer(AsyncWebsocketConsumer):
 		self.game_id = ''
 		self.budget = ''
 		self.grid_size = ''
+
+	@database_sync_to_async
+	def report(self):
+		print('hi')
+		print(Game.objects.to_csv("./data.csv"))
+		print('hi')
 
 	async def init_game(self,data):
 		game_id = data['game_id']
@@ -392,6 +399,7 @@ class MyConsumer(AsyncWebsocketConsumer):
 
 		return pressure
 
+	
 
 	async def sendMessage(self,grid,size,row,col,pressure,initial_pressure,cost):
 		content = {
@@ -435,3 +443,5 @@ class MyConsumer(AsyncWebsocketConsumer):
 			await self.delete_pipe(json_data)
 		elif json_data['command'] == 'change_init_pressure':
 			await self.change_init_pressure(json_data)
+		elif json_data['command'] == 'report':
+			await self.report()
