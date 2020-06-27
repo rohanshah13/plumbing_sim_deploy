@@ -5,6 +5,7 @@ from asgiref.sync import async_to_sync
 from channels.db import database_sync_to_async
 from sim.constants import Cost, Grids
 from postgres_copy import CopyManager
+import os
 
 class MyConsumer(AsyncWebsocketConsumer):
 
@@ -33,8 +34,10 @@ class MyConsumer(AsyncWebsocketConsumer):
 	@database_sync_to_async
 	def report(self):
 		print('hi')
-		print(Game.objects.to_csv("./data.csv"))
-		print('hi')
+		Game.objects.to_csv("./data.csv")
+		if(os.path.exists('./data.csv')):
+			print('created')
+		
 
 	async def init_game(self,data):
 		game_id = data['game_id']
