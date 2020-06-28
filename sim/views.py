@@ -4,7 +4,7 @@ from django.http import HttpResponse
 from django.conf import settings
 import os
 import csv
-from sim.models import Game
+from sim.models import Game, Log
 from postgres_copy import CopyManager
 # Create your views here.
 
