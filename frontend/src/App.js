@@ -469,7 +469,8 @@ class App extends React.Component{
   handleContextMenu(e,i,j){
     const grid = this.state.grid;
     if(grid[i][j].split("_")[0]=="pipe"){
-      
+      const game_id = this.state.game_id
+      WebSocketInstance.pipe_click(game_id,i,j)
       e.preventDefault()
       console.log(e.clientX,e.clientY)
       console.log(i,j)
@@ -515,11 +516,6 @@ class App extends React.Component{
     else{
       alert('Enter a positive integer')
     }
-  }
-
-  handleReport(event){
-  	console.log('report')
-  	WebSocketInstance.report()
   }
 
   render() {
@@ -583,11 +579,7 @@ class App extends React.Component{
               handlePressureChange = {this.handlePressureChange} />
             <Reset
               onClick = {() => this.handleReset()}
-            />
-             <button className="report" onClick={this.handleReport}>
-          Hi 
-          </button>
-                     
+            />       
         </div>
 
         {this.state.visible &&

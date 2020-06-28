@@ -35,3 +35,22 @@ grid = [ ['blank']*31 for i in range(31)]
 Grids['large'] = grid
 grid = [ ['blank']*13 for i in range(13)]
 Grids['small'] = grid
+
+Size = {}
+Size['small'] = '0.5 inch'
+Size['medium'] = '0.75 inch'
+Size['large'] = '1 inch'
+
+Direction = {}
+Direction['U'] = 'Up'
+Direction['D'] = 'Down'
+Direction['L'] = 'Left'
+Direction['R'] = 'Right'
+
+GridSize = {}
+GridSize['small'] = 'Small'
+GridSize['mid'] = 'Medium'
+GridSize['large'] = 'Large'
+GridSize[13] = 'small'
+GridSize[22] = 'mid'
+GridSize[31] = 'large'

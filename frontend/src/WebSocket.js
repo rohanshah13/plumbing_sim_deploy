@@ -79,8 +79,8 @@ class WebSocketService{
     changePressure(game_id,initial_pressure){
         this.sendMessage({command: 'change_init_pressure', game_id: game_id, initial_pressure: initial_pressure})
     }
-    report(){
-        this.sendMessage({command: 'report'})
+    pipe_click(game_id,i,j){
+        this.sendMessage({command: 'pipe_click', game_id: game_id, i:i,j:j})
     }
     addCallbacks(gameCallback){
         this.callbacks['game'] = gameCallback;
