@@ -9,6 +9,19 @@ from .forms import SearchForm
 from django import forms
 # Create your views here.
 
+class ReactAppView(View):
+	def get(self,request):
+		try:
+			with open(os.path.join(settings.REACT_APP, 'builda', 'index.html')) as file:
+				return HttpResponse(file.read())
+		except:
+			return HttpResponse(
+				'''
+				index.html not found ! build your React app !!
+				''',
+				status = 501,
+			)
+
 def logfile(request, id):
 	# Create the HttpResponse object with the appropriate CSV header.
 	file_path = './data_' + id + '.csv'
