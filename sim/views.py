@@ -7,6 +7,8 @@ from datetime import date
 from postgres_copy import CopyManager
 from .forms import SearchForm
 from django import forms
+from django.views.generic import View
+from django.conf import settings
 # Create your views here.
 
 class ReactAppView(View):
