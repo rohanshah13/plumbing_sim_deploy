@@ -94,6 +94,9 @@ class LoginComponent extends React.Component {
 
         </form>
         </div>
+        <div className="log">
+        <a href="/sim/log">View Logs</a>
+        </div>
       </div>
     );
   }
