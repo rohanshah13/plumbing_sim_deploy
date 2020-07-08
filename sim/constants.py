@@ -90,8 +90,10 @@ grid[30][51] = "tap"
 grid[9][21] = "tap"
 grid[9][51] = "tap"
 Grids['new'] = grid
-with open('./vars','rb') as f:
-	Grids['sub_opt'] = pickle.load(f)
+file_path = './sim/vars'
+if os.path.exists(file_path):
+	with open('./vars','rb') as f:
+		Grids['sub_opt'] = pickle.load(f)
 
 Size = {}
 Size['small'] = '0.5 inch'
