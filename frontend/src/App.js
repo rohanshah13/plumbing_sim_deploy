@@ -68,22 +68,28 @@ class LoginComponent extends React.Component {
           /></div>
           </div>
           <div className="login-comp">
-          Grid Size<br /> 
+          Grid:<br /> 
+
           <div className="size-options">
-         
           <input type="radio" checked = {this.state.grid_size=="large"} value = "large" onChange = {this.sizeChangeHandler} />
           Large
           </div>
-          <div className="size-options">
-          
+
+          <div className="size-options">          
           <input type="radio" checked = {this.state.grid_size=="mid"} value = "mid" onChange = {this.sizeChangeHandler} />
           Medium
           </div>
-          <div className="size-options">
-          
+
+          <div className="size-options">         
           <input type="radio" checked = {this.state.grid_size=="small"} value = "small" onChange = {this.sizeChangeHandler} />
           Small
           </div>
+
+          <div className="size-options">         
+          <input type="radio" checked = {this.state.grid_size=="sub_opt"} value = "sub_opt" onChange = {this.sizeChangeHandler} />
+          Sub Optimal Model
+          </div>
+
           </div>
           <div className="login-submit">
           <button className="submit" type="submit" className="login-submit-button">
@@ -107,8 +113,9 @@ class LoginComponent extends React.Component {
 
 class Block extends React.Component{
   render(){
+
   return (
-    <div className="square" style={{background:this.props.color, height:this.props.dimen, width:this.props.dimen, fontSize: this.props.fontsize}} onClick={this.props.onClick}>
+    <div className="square" style={{background:this.props.color, height:this.props.dimenh, width:this.props.dimenw, fontSize: this.props.fontsize}} onClick={this.props.onClick}>
     {this.props.pressure}
     </div>
   )
@@ -129,6 +136,8 @@ class Grid extends React.Component{
       onContextMenu={(e) => this.handleContextMenu(e,i,j)}
       pressure = {pressure}
       dimen = {this.props.dimen}
+      dimenh = {this.props.dimenh}
+      dimenw={this.props.dimenw}
       fontsize = {this.props.fontsize}
     />
   }
@@ -137,27 +146,28 @@ class Grid extends React.Component{
     this.props.handleContextMenu(e,i,j)
   }
 
-  renderRow(i,n){
+  renderRow(i,m){
     let row = []
-    for(let j = 0; j<n; j++){
+    for(let j = 0; j<m; j++){
       row.push(this.renderBlock(i,j));
     }
     return row;
   }
 
-  renderGrid(n){
+  renderGrid(n,m){
     let grid = []
     for(let i=0; i<n; i++){
-      grid.push(this.renderRow(i,n));
+      grid.push(this.renderRow(i,m));
     }
     return grid;
   }
 
   render(){
-    const n = this.props.size;
+    const n = this.props.height;
+    const m = this.props.width;
     return(
       <div className="gridx">
-        {this.renderGrid(n)}
+        {this.renderGrid(n,m)}
       </div>
     )
   }
@@ -325,12 +335,18 @@ class App extends React.Component{
     this.handleBlockClick = this.handleBlockClick.bind(this);
     this.setVisibility = this.setVisibility.bind(this);
     let size = 22
+    let height = 22
+    let width = 22
     let grid = []
     let row = size-1
     let col = 0
     let pressure = []
     let frac = 100/size
     let dimen = frac.toString() + "%";
+    let fracw = 100/width
+    let frach = 100/height
+    let dimenw = fracw.toString() + "%";
+    let dimenh = frach.toString() + "%";
     console.log(dimen)
     for(let i=0;i<size;i++){
       let row = Array(size).fill("blank")
@@ -357,8 +373,11 @@ class App extends React.Component{
       initial_pressure: '60',
       cost: 0,
       budget: 0,
-      dimen: dimen,
+      dimenw: dimenw,
+      dimenh: dimenh,
       fontsize: 0,
+      height: height,
+      width: width,
     };
    
   }
@@ -394,7 +413,7 @@ class App extends React.Component{
   handleBlockClick(e,i,j){
     let game_id = this.state.game_id
     const grid = this.state.grid;
-    if(grid[i][j]=="split"){
+    if(grid[i][j]=="split" || grid[i][j]=="tap"){
    		WebSocketInstance.blockClick(game_id,i,j)
    	}
    	else if(grid[i][j].split("_")[0]=="pipe"){
@@ -440,8 +459,14 @@ class App extends React.Component{
     const initial_pressure = parsedData['initial_pressure']
     const cost = parsedData['cost']
     const budget = parsedData['budget']
+    const height = parsedData['height']
+    const width = parsedData['width']
     let frac = 100/size;
     let dimen = frac.toString() + "%"
+    let frach = 100/height
+    let fracw = 100/width
+    let dimenh = frach.toString() + "%"
+    let dimenw = fracw.toString() + "%"
     let fontsz = 0
     if(size==13){
       fontsz = 3
@@ -463,10 +488,15 @@ class App extends React.Component{
       cost: cost,
       budget: budget,
       size: size,
+      height: height,
+      width: width,
       dimen: dimen,
+      dimenh: dimenh,
+      dimenw: dimenw,
       fontsize: fontsize,
     })
-    
+    console.log(height,frach,dimenh)
+    console.log(width,fracw,dimenw)
   }
 
   handleContextMenu(e,i,j){
@@ -523,6 +553,8 @@ class App extends React.Component{
 
   render() {
     const size = this.state.size
+    const height = this.state.height
+    const width = this.state.width
     const grid = this.state.grid
     const loggedIn = this.state.loggedIn
     const pressure = this.state.pressure
@@ -530,6 +562,8 @@ class App extends React.Component{
     const budget = this.state.budget
     const color = budget>=cost ? "green" : "red"
     const dimen = this.state.dimen
+    const dimenh = this.state.dimenh
+    const dimenw = this.state.dimenw
     const fontsize = this.state.fontsize
     return(
        loggedIn ?
@@ -538,11 +572,15 @@ class App extends React.Component{
         
           <Grid 
             size={size}
+            height={height}
+            width={width}
             grid={grid}
             onClick = {(e,i,j) => this.handleBlockClick(e,i,j)}
             handleContextMenu = {this.handleContextMenu}
             pressure = {pressure}
             dimen = {dimen}
+            dimenh={dimenh}
+            dimenw={dimenw}
             fontsize = {fontsize}
           />
         

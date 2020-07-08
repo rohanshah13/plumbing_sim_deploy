@@ -17,11 +17,18 @@ input[type=text]{
 .rowC{
   display:flex; flex-direction:row;
   background-color: #efeff5; 
-  padding: 10px;
-  width: 80vw;
+  padding: 00px;
+  width: 100vw;
   height: 50vw;
   border: 3px solid black;
   margin-left: 1vw;
+}
+
+.gridx{
+  width: 70vw;
+  height: 50vw;
+  margin: auto;
+  border: 2px solid black;
 }
 
 .direction {
@@ -260,12 +267,7 @@ label {
 }
 
 
-.gridx{
-  width: 50vw;
-  height: 50vw;
-  margin: auto;
-  border: 2px solid black;
-}
+
 
 .login{
   width:100vw;

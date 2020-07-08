@@ -5,8 +5,11 @@ from postgres_copy import CopyManager
 # Create your models here.
 
 class Game(models.Model):
+	logged_in = models.BooleanField(default=False)
 	game_id = models.TextField(max_length=30)
 	size = models.IntegerField(default=10)
+	height = models.IntegerField(default=22)
+	width = models.IntegerField(default=22)
 	row = models.IntegerField(default=0)
 	col = models.IntegerField(default=0)
 	initial_pressure = models.IntegerField(default=60)

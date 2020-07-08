@@ -7,6 +7,7 @@ from sim.constants import Cost, Grids, Size, Direction, GridSize
 from postgres_copy import CopyManager
 import os
 import csv
+import pickle
 from django.http import HttpResponse
 
 class MyConsumer(AsyncWebsocketConsumer):
@@ -48,49 +49,64 @@ class MyConsumer(AsyncWebsocketConsumer):
 			pressure = []
 			grid = Grids[grid_size]
 			size = len(grid[0])
-			for i in range(size):
+			height = len(grid)
+			width = len(grid[0])
+			for i in range(height):
 				#row = []
 				prow = []
-				for j in range(size):
+				for j in range(width):
 					#row.append('blank')
 					prow.append('')
 				#grid.append(row)
 				pressure.append(prow)
-			row = size-1
+			row = height-1
 			col = 0
-			#print(len(grid),row,col)
+			print(len(grid),row,col)
 			grid[row][col] = 'active'
 			#print(grid[row][col])
 			pressure[row][col] = '60'
+			#async def calc_pressure(self,initial_pressure,grid,size,height,width)
+			pressure  = await self.calc_pressure(60,grid,size,height,width)
+			if(grid_size=='sub_opt'):
+				cost = 3057
+			else:
+				cost = 0
 			json_grid = json.dumps(grid)
 			json_pressure = json.dumps(pressure)
 			info = {}
 			info['Budget'] = budget
 			info['Grid Size'] = GridSize[grid_size]
-			game = Game(game_id=game_id,size=size,row=row,col=col,grid=json_grid,pressure=json_pressure,budget=budget)
+			game = Game(logged_in = True, game_id=game_id,size=size,row=row,col=col,grid=json_grid,pressure=json_pressure,budget=budget,height=height,width=width,cost=cost)
 			log = Log(action='Login', sim_id = game_id, money_spent = 0, money_left = game.budget, info = info)
 			await self.save(game,log)
-			await self.sendMessage(grid,size,row,col,pressure,game.initial_pressure,game.cost,game.budget)
+			await self.sendMessage(grid,size,height,width,row,col,pressure,game.initial_pressure,game.cost,game.budget)
 		
 	async def reset(self,data):
 		game_id = data['game_id']
 		game =  await self.get_game(game_id)
 		pressure = []
-		grid_size = GridSize[game.size]
+		if game.height == game.width:
+			grid_size = GridSize[game.size]
+		else:
+			grid_size = 'sub_opt'
 		grid = Grids[grid_size]
+
 		size = len(grid[0])
-		for i in range(size):
+		height = len(grid)
+		width = len(grid[0])
+		for i in range(height):
 			row = []
 			prow = []
-			for j in range(size):
+			for j in range(width):
 				row.append('blank')
 				prow.append('')
 			#grid.append(row)
 			pressure.append(prow)
-		row = size-1
+		row = height-1
 		col = 0
 		grid[row][col] = 'active'
 		pressure[row][col] = '60'
+		pressure  = await self.calc_pressure(60,grid,size,height,width)
 		game.pressure = json.dumps(pressure)
 		game.grid = json.dumps(grid)
 		game.row = row
@@ -98,13 +114,21 @@ class MyConsumer(AsyncWebsocketConsumer):
 		game.initial_pressure = '60'
 		game.cost = 0
 		info = {}
+		
+		if(grid_size=='sub_opt'):
+			game.cost = 3057
+		else:
+			game.cost = 0
+		json_grid = json.dumps(grid)
 		#logging
 		log = Log(action="Reset", sim_id=game_id, money_spent=0, money_left=game.budget, info=info)
 		
 		await self.save(game,log)
-		await self.sendMessage(grid,size,row,col,pressure,game.initial_pressure,game.cost,game.budget)
+		await self.sendMessage(grid,size,height,width,row,col,pressure,game.initial_pressure,game.cost,game.budget)
 
 	async def block_click(self,data):
+		
+		#load variables
 		game_id = data['game_id']
 		game = await self.get_game(game_id)
 		i = int(data['i'])
@@ -112,14 +136,22 @@ class MyConsumer(AsyncWebsocketConsumer):
 		row = game.row
 		col = game.col
 		size = game.size
+		height = game.height
+		width = game.width
 		pressure = json.loads(game.pressure)
 		grid = json.loads(game.grid)
 		print(game.budget)
 		#print(i)
 		#print(grid[6][3])
-		if(grid[i][j]=='split'):
-			grid[i][j] = 'active'
-			grid[row][col] = 'split'
+		if(grid[i][j]=='split' or grid[i][j]=='tap'):
+			if grid[i][j]=='split':
+				grid[i][j] = 'active'
+			else:
+				grid[i][j] = 'tap_active'
+			if grid[row][col]=='active':
+				grid[row][col] = 'split'
+			else:
+				grid[row][col] = 'tap'
 			game.grid = json.dumps(grid)
 			game.row = i
 			game.col = j
@@ -133,23 +165,28 @@ class MyConsumer(AsyncWebsocketConsumer):
 				money_spent = game.cost, money_left = money_left, info =info)
 			
 			await self.save(game,log)
-			await self.sendMessage(grid,size,i,j,pressure,game.initial_pressure,game.cost,game.budget)
+			await self.sendMessage(grid,size,height,width,i,j,pressure,game.initial_pressure,game.cost,game.budget)
 
 	async def delete_pipe(self,data):
+		
+		#load variables
 		game_id = data['game_id']
 		game = await self.get_game(game_id)
 		i = int(data['i'])
 		j = int(data['j'])
 		currSplitX = game.row
 		currSplitY = game.col
-		size = game.size	
+		size = game.size
+		height = game.height
+		width = game.width	
 		pressure = json.loads(game.pressure)
 		initial_pressure = game.initial_pressure
 		grid = json.loads(game.grid)
 		pipe_size = grid[i][j].split('_')[2]
 		direction = grid[i][j].split('_')[1]
 		direction = Direction[direction]
-		if j+1<game.size and grid[i][j+1].split('_')[0] == 'pipe':
+		
+		if j+1<width and grid[i][j+1].split('_')[0] == 'pipe':
 			ni = i
 			nj = j+1
 			split1X = i
@@ -163,7 +200,7 @@ class MyConsumer(AsyncWebsocketConsumer):
 			split1Y = j+1
 			split2X = i
 			split2Y = j-2
-		elif i+1<game.size and grid[i+1][j].split('_')[0] == 'pipe':
+		elif i+1<height and grid[i+1][j].split('_')[0] == 'pipe':
 			ni = i+1
 			nj = j
 			split1X = i-1
@@ -177,40 +214,69 @@ class MyConsumer(AsyncWebsocketConsumer):
 			split1Y = j
 			split2X = i-2
 			split2Y = j
-		if await self.is_junction(grid,split1X,split1Y,size):
+		bend_deleted1 = False
+		bend_deleted2 = False
+		if await self.is_junction(grid,split1X,split1Y,size,height,width):
 			game.cost -= Cost['junction']
-		if await self.is_junction(grid,split2X,split2Y,size):
+			bend_deleted1 = True
+		if await self.is_junction(grid,split2X,split2Y,size,height,width):
 			game.cost -= Cost['junction']
+			bend_deleted2 = True
 		grid[i][j] = 'blank'
 		grid[ni][nj] = 'blank'
 		game.cost -= Cost[pipe_size]
-		if await self.emptySplit(split1X,split1Y,grid,size):
-			if not (split1X == size-1 and split1Y == 0):
+		if await self.emptySplit(split1X,split1Y,grid,size,height,width):
+			if grid[split1X][split1Y] in ['tap','tap_active']:
+				grid[split1X][split1Y] = 'tap'
+			elif not (split1X == height-1 and split1Y == 0):
 				print(split1X,split1Y)
 				grid[split1X][split1Y] = 'blank'
 			else:
 				grid[split1X][split1Y] = 'split'
 			if currSplitX == split1X and currSplitY == split1Y:
-				grid[size-1][0] = 'active'
-				currSplitX = size-1
+				grid[height-1][0] = 'active'
+				currSplitX = height-1
 				currSplitY = 0
-		if await self.emptySplit(split2X,split2Y,grid,size):
-			if not (split2X == size-1 and split2Y == 0):
+		if await self.emptySplit(split2X,split2Y,grid,size,height,width):
+			if grid[split2X][split2Y] in ['tap','tap_active']:
+				grid[split2X][split2Y] = 'tap'
+			elif not (split2X == height-1 and split2Y == 0):
 				print(split2X,split2Y)
 				grid[split2X][split2Y] = 'blank'
 			else:
 				grid[split2X][split2Y] = 'split'
 			if currSplitX == split2X and currSplitY == split2Y:
-				grid[size-1][0] = 'active'
-				currSplitX = size-1
+				grid[height-1][0] = 'active'
+				currSplitX = height-1
 				currSplitY = 0
-		if await self.is_junction(grid,split1X,split1Y,size):
+		if await self.is_junction(grid,split1X,split1Y,size,height,width):
 			game.cost += Cost['junction']
-		if await self.is_junction(grid,split2X,split2Y,size):
+			bend_deleted1 = False
+		if await self.is_junction(grid,split2X,split2Y,size,height,width):
 			game.cost += Cost['junction']
+			bend_deleted2 = False
+		
+		#logging
+		if bend_deleted1:
+			money_spent = game.cost+Cost[pipe_size]
+			money_left = game.budget - money_spent
+			location = '(' + str(split1X) + ',' + str(split1Y) + ')'
+			info = {}
+			log = Log(sim_id=game_id,action="Removed Pipe Bend", money_left=money_left,
+			money_spent=money_spent,location=location, info=info)
+			await self.save(None,log)
+		if bend_deleted2:
+			money_spent = game.cost+Cost[pipe_size]
+			money_left = game.budget - money_spent
+			location = '(' + str(split2X) + ',' + str(split2Y) + ')'
+			info = {}
+			log = Log(sim_id=game_id,action="Removed Pipe Bend", money_left=money_left,
+			money_spent=money_spent,location=location, info=info)
+			await self.save(None,log)
+		
 		game.row = currSplitX
 		game.col = currSplitY
-		pressure = await self.calc_pressure(initial_pressure,grid,size)
+		pressure = await self.calc_pressure(initial_pressure,grid,size,height,width)
 		game.grid = json.dumps(grid)
 		game.pressure = json.dumps(pressure)
 		
@@ -230,31 +296,35 @@ class MyConsumer(AsyncWebsocketConsumer):
 		elif pressure[s2x][s2y] != '':
 			info['Active Pressure'] = int(pressure[split2X][split2Y])
 
-		log = Log(sim_id=game_id, action="Delete Pipe", money_spent=game.cost,
+		log = Log(sim_id=game_id, action="Deleted Pipe", money_spent=game.cost,
 			money_left=money_left, location=location, info=info)
 		
 		await self.save(game,log)
-		await self.sendMessage(grid,game.size,game.row,game.col,pressure,game.initial_pressure,game.cost,game.budget)
+		await self.sendMessage(grid,game.size,height,width,game.row,game.col,pressure,game.initial_pressure,game.cost,game.budget)
 
-	async def emptySplit(self,i,j,grid,size):
+	async def emptySplit(self,i,j,grid,size,height,width):
 		ret = True
-		if i+1<size and grid[i+1][j].split('_')[0] == 'pipe':
+		if i+1<height and grid[i+1][j].split('_')[0] == 'pipe':
 			ret = False
 		if i-1>=0 and grid[i-1][j].split('_')[0] == 'pipe':
 			ret = False
-		if j+1<size and grid[i][j+1].split('_')[0] == 'pipe':
+		if j+1<width and grid[i][j+1].split('_')[0] == 'pipe':
 			ret = False
 		if j-1>=0 and grid[i][j-1].split('_')[0] == 'pipe':
 			ret = False
 		return ret
 
 	async def change_size(self,data):
+		
+		#load variables
 		game_id = data['game_id']
 		game = await self.get_game(game_id)
 		pipe_size = data['pipe_size']
 		i = int(data['i'])
 		j = int(data['j'])
 		size = game.size
+		height = game.height
+		width = game.width
 		grid = json.loads(game.grid)
 		pressure = json.loads(game.pressure)
 		initial_pressure = game.initial_pressure
@@ -262,7 +332,8 @@ class MyConsumer(AsyncWebsocketConsumer):
 		pipe_direction = Direction[direction]
 		initial_size = grid[i][j].split('_')[2]
 		game.cost -= Cost[initial_size]
-		if j+1<game.size and grid[i][j+1].split('_')[0] == 'pipe':
+
+		if j+1<width and grid[i][j+1].split('_')[0] == 'pipe':
 			ni = i
 			nj = j+1
 			s1x,s1y,s2x,s2y = i,j-1,i,j+2
@@ -270,7 +341,7 @@ class MyConsumer(AsyncWebsocketConsumer):
 			ni = i
 			nj = j-1
 			s1x,s1y,s2x,s2y = i,j-2,i,j+1
-		elif i+1<game.size and grid[i+1][j].split('_')[0] == 'pipe':
+		elif i+1<height and grid[i+1][j].split('_')[0] == 'pipe':
 			ni = i+1
 			nj = j
 			s1x,s1y,s2x,s2y = i-1,j,i+2,j
@@ -281,7 +352,7 @@ class MyConsumer(AsyncWebsocketConsumer):
 		grid[i][j] = 'pipe' + '_' + direction + '_' + pipe_size
 		grid[ni][nj] = 'pipe' + '_' + direction + '_' + pipe_size
 		game.cost += Cost[pipe_size]
-		pressure = await self.calc_pressure(initial_pressure,grid,size)
+		pressure = await self.calc_pressure(initial_pressure,grid,size,height,width)
 		game.grid = json.dumps(grid)
 		game.pressure = json.dumps(pressure)
 		#logging
@@ -298,13 +369,13 @@ class MyConsumer(AsyncWebsocketConsumer):
 			location=location, info=info)
 
 		await self.save(game,log)
-		await self.sendMessage(grid,game.size,game.row,game.col,pressure,game.initial_pressure,game.cost,game.budget)
+		await self.sendMessage(grid,game.size,height,width,game.row,game.col,pressure,game.initial_pressure,game.cost,game.budget)
 
-	async def cycle_check(self,grid,row,col,xpos,ypos,size):
+	async def cycle_check(self,grid,row,col,xpos,ypos,size,height,width):
 		visited = []
-		for i in range(size):
+		for i in range(height):
 			temp = []
-			for j in range(size):
+			for j in range(width):
 				temp.append(False)
 			visited.append(temp)
 		visited[row][col] = True
@@ -313,11 +384,11 @@ class MyConsumer(AsyncWebsocketConsumer):
 		while queue:
 			u = queue.pop(0)
 			visited[u[0]][u[1]] = True			
-			if u[0]+1<size and grid[u[0]+1][u[1]].split('_')[0]=='pipe' and (not visited[u[0]+3][u[1]]):
+			if u[0]+1<height and grid[u[0]+1][u[1]].split('_')[0]=='pipe' and (not visited[u[0]+3][u[1]]):
 				queue.append((u[0]+3,u[1]))
 			if u[0]-1>=0 and grid[u[0]-1][u[1]].split('_')[0]=='pipe' and (not visited[u[0]-3][u[1]]):
 				queue.append((u[0]-3,u[1]))
-			if u[1]+1<size and grid[u[0]][u[1]+1].split('_')[0]=='pipe' and (not visited[u[0]][u[1]+3]):
+			if u[1]+1<width and grid[u[0]][u[1]+1].split('_')[0]=='pipe' and (not visited[u[0]][u[1]+3]):
 				queue.append((u[0],u[1]+3))
 			if u[1]-1>=0 and grid[u[0]][u[1]-1].split('_')[0]=='pipe' and (not visited[u[0]][u[1]-3]):
 				queue.append((u[0],u[1]-3))
@@ -326,14 +397,16 @@ class MyConsumer(AsyncWebsocketConsumer):
 		else:
 			return True
 
-	async def is_junction(self,grid,i,j,size):
+	async def is_junction(self,grid,i,j,size,height,width):
 		ret = False
-		if (i+1<size and grid[i+1][j].split('_')[0] == 'pipe') or (i-1>=0 and grid[i-1][j].split('_')[0] == 'pipe'):
-			if (j+1<size and grid[i][j+1].split('_')[0] == 'pipe') or (j-1>=0 and grid[i][j-1].split('_')[0] == 'pipe'):
+		if (i+1<height and grid[i+1][j].split('_')[0] == 'pipe') or (i-1>=0 and grid[i-1][j].split('_')[0] == 'pipe'):
+			if (j+1<width and grid[i][j+1].split('_')[0] == 'pipe') or (j-1>=0 and grid[i][j-1].split('_')[0] == 'pipe'):
 				ret = True
 		return ret
 
 	async def direction_click(self,data):
+		
+		#load variables
 		game_id = data['game_id']
 		game = await self.get_game(game_id)
 		direction = data['direction'][0]
@@ -341,10 +414,13 @@ class MyConsumer(AsyncWebsocketConsumer):
 		row = game.row
 		col = game.col
 		size = game.size
+		height = game.height
+		width = game.width
 		grid = json.loads(game.grid)
 		pressure = json.loads(game.pressure)
 		initial_pressure = str(game.initial_pressure)
 		currIndex = (row,col)
+
 		idx1 = None
 		idx2 = None 
 		idx3 = None
@@ -380,28 +456,34 @@ class MyConsumer(AsyncWebsocketConsumer):
 		await self.save(None,log)
 
 		valid = False
-		if 0<=idx3[0]<size and 0<=idx3[1]<size:
-			if grid[idx1[0]][idx1[1]] == 'blank' and grid[idx2[0]][idx2[1]] == 'blank' and grid[idx3[0]][idx3[1]] == 'blank':
+		if 0<=idx3[0]<height and 0<=idx3[1]<width:
+			if grid[idx1[0]][idx1[1]] == 'blank' and grid[idx2[0]][idx2[1]] == 'blank' and grid[idx3[0]][idx3[1]] in ['blank']:
 				valid = True
-			elif grid[idx1[0]][idx1[1]] == 'blank' and grid[idx2[0]][idx2[1]] == 'blank' and grid[idx3[0]][idx3[1]] == 'split':
-				valid = await self.cycle_check(grid,row,col,idx3[0],idx3[1],size)
+			elif grid[idx1[0]][idx1[1]] == 'blank' and grid[idx2[0]][idx2[1]] == 'blank' and grid[idx3[0]][idx3[1]] in ['split','tap']:
+				valid = await self.cycle_check(grid,row,col,idx3[0],idx3[1],size,height,width)
 		if valid:
 			prev1,prev2=False,False
-			if await self.is_junction(grid,row,col,size):
+			if await self.is_junction(grid,row,col,size,height,width):
 				game.cost -= Cost['junction']
 				prev1 = True
-			if await self.is_junction(grid,idx3[0],idx3[1],size):
+			if await self.is_junction(grid,idx3[0],idx3[1],size,height,width):
 				game.cost -= Cost['junction']
 				prev2 = True
-			grid[row][col] = 'split'
+			if not (grid[row][col] in ['tap','tap_active']):
+				grid[row][col] = 'split'
+			else:
+				grid[row][col] = 'tap'
 			grid[idx1[0]][idx1[1]] = 'pipe' + '_' + direction + '_' + pipe_size
 			grid[idx2[0]][idx2[1]] = 'pipe'+ '_' + direction + '_' + pipe_size
-			grid[idx3[0]][idx3[1]] = 'active' 
+			if grid[idx3[0]][idx3[1]] == 'tap':
+				grid[idx3[0]][idx3[1]] = 'tap_active'
+			else:
+				grid[idx3[0]][idx3[1]] = 'active' 
 			game.cost += Cost[pipe_size]
-			if await self.is_junction(grid,row,col,size):
+			if await self.is_junction(grid,row,col,size,height,width):
 				game.cost += Cost['junction']
+				#logging
 				if not prev1:
-					#logging
 					money_spent = game.cost-Cost[pipe_size]
 					money_left = game.budget - money_spent
 					location = '(' + str(row) + ',' + str(col) + ')'
@@ -410,10 +492,10 @@ class MyConsumer(AsyncWebsocketConsumer):
 						money_spent=money_spent,location=location, info=info)
 					await self.save(None,log)
 
-			if await self.is_junction(grid,idx3[0],idx3[1],size):
+			if await self.is_junction(grid,idx3[0],idx3[1],size,height,width):
 				game.cost += Cost['junction']
+				#logging
 				if not prev2:
-					#logging
 					money_spent = game.cost-Cost[pipe_size]
 					money_left = game.budget - money_spent
 					location = '(' + str(row) + ',' + str(col) + ')'
@@ -426,7 +508,7 @@ class MyConsumer(AsyncWebsocketConsumer):
 			row = idx3[0]
 			col = idx3[1]
 			s2x, s2y = row,col
-			pressure = await self.calc_pressure(initial_pressure,grid,size)
+			pressure = await self.calc_pressure(initial_pressure,grid,size,height,width)
 			game.row = row 
 			game.col = col
 			game.grid = json.dumps(grid)
@@ -446,7 +528,7 @@ class MyConsumer(AsyncWebsocketConsumer):
 				money_spent=money_spent, money_left=money_left, info=info)
 
 			await self.save(game,log)
-			await self.sendMessage(grid,size,row,col,pressure,game.initial_pressure,game.cost,game.budget)
+			await self.sendMessage(grid,size,height,width,row,col,pressure,game.initial_pressure,game.cost,game.budget)
 
 	async def change_init_pressure(self,data):
 		game_id = data['game_id']
@@ -456,7 +538,9 @@ class MyConsumer(AsyncWebsocketConsumer):
 		game.initial_pressure = initial_pressure
 		grid = json.loads(game.grid)
 		size = game.size
-		pressure = await self.calc_pressure(initial_pressure,grid,size)
+		height = game.height
+		width = game.width
+		pressure = await self.calc_pressure(initial_pressure,grid,size,height,width)
 		game.pressure = json.dumps(pressure)
 		
 		#logging
@@ -469,7 +553,7 @@ class MyConsumer(AsyncWebsocketConsumer):
 			money_left=money_left, info=info)
 
 		await self.save(game, log)
-		await self.sendMessage(grid,game.size,game.row,game.col,pressure,game.initial_pressure,game.cost,game.budget)
+		await self.sendMessage(grid,game.size,height,width,game.row,game.col,pressure,game.initial_pressure,game.cost,game.budget)
 
 	async def pipe_click(self, data):
 		game_id = data['game_id']
@@ -477,12 +561,14 @@ class MyConsumer(AsyncWebsocketConsumer):
 		i = int(data['i'])
 		j = int(data['j'])
 		grid = json.loads(game.grid)
+		height = game.height
+		width = game.width
 		pressure = json.loads(game.pressure)
 		direction = grid[i][j].split('_')[1]
 		pipe_size = grid[i][j].split('_')[2]
 		direction = Direction[direction]
 		pipe_size = Size[pipe_size]	
-		if j+1<game.size and grid[i][j+1].split('_')[0] == 'pipe':
+		if j+1<width and grid[i][j+1].split('_')[0] == 'pipe':
 			ni = i
 			nj = j+1
 			s1x,s1y,s2x,s2y = i,j-1,i,j+2
@@ -492,7 +578,7 @@ class MyConsumer(AsyncWebsocketConsumer):
 			nj = j-1
 			pipe_direction = 'vertical'
 			s1x,s1y,s2x,s2y = i,j-2,i,j+1
-		elif i+1<game.size and grid[i+1][j].split('_')[0] == 'pipe':
+		elif i+1<height and grid[i+1][j].split('_')[0] == 'pipe':
 			ni = i+1
 			nj = j
 			pipe_direction = 'horizontal'
@@ -517,34 +603,34 @@ class MyConsumer(AsyncWebsocketConsumer):
 		await self.save(None,log)
 
 
-	async def calc_pressure(self,initial_pressure,grid,size):
+	async def calc_pressure(self,initial_pressure,grid,size,height,width):
 
 		pressure = []
 		visited = []
-		for i in range(size):
+		for i in range(height):
 			prow = []
 			temp = []
-			for j in range(size):
+			for j in range(width):
 				prow.append('')
 				temp.append(False)
 			pressure.append(prow)
 			visited.append(temp)
 
-		pressure[size-1][0] = initial_pressure
+		pressure[height-1][0] = initial_pressure
 		pressure_drop = {}
 		pressure_drop["large"] = 1
 		pressure_drop["medium"] = 4
 		pressure_drop["small"] = 12
 
 		queue = []
-		queue.append((size-1,0))
+		queue.append((height-1,0))
 		
 
 		while queue:
 			u = queue.pop(0)
 			visited[u[0]][u[1]] = True
 			current_pressure = int(pressure[u[0]][u[1]])
-			if u[0]+1<size and grid[u[0]+1][u[1]].split('_')[0]=='pipe' and (not visited[u[0]+3][u[1]]):
+			if u[0]+1<height and grid[u[0]+1][u[1]].split('_')[0]=='pipe' and (not visited[u[0]+3][u[1]]):
 				pipe_size = grid[u[0]+1][u[1]].split('_')[2]
 				pressure[u[0]+3][u[1]] = str(max(current_pressure - pressure_drop[pipe_size],0))
 				queue.append((u[0]+3,u[1]))
@@ -552,7 +638,7 @@ class MyConsumer(AsyncWebsocketConsumer):
 				pipe_size = grid[u[0]-1][u[1]].split('_')[2]
 				pressure[u[0]-3][u[1]] = str(max(current_pressure - pressure_drop[pipe_size],0))
 				queue.append((u[0]-3,u[1]))
-			if u[1]+1<size and grid[u[0]][u[1]+1].split('_')[0]=='pipe' and (not visited[u[0]][u[1]+3]):
+			if u[1]+1<width and grid[u[0]][u[1]+1].split('_')[0]=='pipe' and (not visited[u[0]][u[1]+3]):
 				pipe_size = grid[u[0]][u[1]+1].split('_')[2]
 				pressure[u[0]][u[1]+3] = str(max(current_pressure - pressure_drop[pipe_size],0))
 				queue.append((u[0],u[1]+3))
@@ -565,11 +651,13 @@ class MyConsumer(AsyncWebsocketConsumer):
 
 	
 
-	async def sendMessage(self,grid,size,row,col,pressure,initial_pressure,cost,budget):
+	async def sendMessage(self,grid,size,height,width,row,col,pressure,initial_pressure,cost,budget):
 		content = {
 			'command' : 'game',
 			'grid' : grid,
 			'size' : size,
+			'height': height,
+			'width': width,
 			'row' : row,
 			'col' : col,
 			'pressure': pressure,
@@ -588,7 +676,9 @@ class MyConsumer(AsyncWebsocketConsumer):
 		pass
 
 	async def disconnect(self, close_code):
-		await self.delete_game(self.game_id)
+		game = await self.get_game(self.game_id)
+		game.logged_in = False
+		await self.save(game.game_id)
 		pass
 
 	async def receive(self, text_data):
