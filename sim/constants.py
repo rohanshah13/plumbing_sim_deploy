@@ -90,7 +90,7 @@ grid[30][51] = "tap"
 grid[9][21] = "tap"
 grid[9][51] = "tap"
 Grids['new'] = grid
-with open('vars','rb') as f:
+with open('./vars','rb') as f:
 	Grids['sub_opt'] = pickle.load(f)
 
 Size = {}
