@@ -60,3 +60,7 @@ def log(request):
 
 	context = {'today_filter':today_filter, 'form':form}
 	return render(request, 'sim/log.html', context)
+
+def tutorials(request):
+	context = {}
+	return render(request, 'sim/tutorials.html', context)

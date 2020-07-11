@@ -165,8 +165,12 @@ class Grid extends React.Component{
   render(){
     const n = this.props.height;
     const m = this.props.width;
+    let width = "50vw"
+      if(n!=m){
+        width = "75vw"
+    }
     return(
-      <div className="gridx">
+      <div className="gridx" style={{width:width}}>
         {this.renderGrid(n,m)}
       </div>
     )
@@ -565,11 +569,16 @@ class App extends React.Component{
     const dimenh = this.state.dimenh
     const dimenw = this.state.dimenw
     const fontsize = this.state.fontsize
+    let div_width = "75vw"
+
+    if(height!=width){
+      div_width = "100vw"
+    }
     return(
        loggedIn ?
-      <div className = 'rowC '>
-
-        
+      <div className='container'>
+      <div className = 'rowC ' style={{width:div_width}}>
+      
           <Grid 
             size={size}
             height={height}
@@ -620,8 +629,11 @@ class App extends React.Component{
               handlePressureChange = {this.handlePressureChange} />
             <Reset
               onClick = {() => this.handleReset()}
-            />       
+            />
+
         </div>
+
+
 
         {this.state.visible &&
           <div style={{position:"absolute", top:this.state.menuY, left:this.state.menuX}} className="menu">
@@ -648,7 +660,10 @@ class App extends React.Component{
             </div>
         }
 
-
+      </div>
+      <div className="links">
+        Feeling Lost? Here's a <a href="https://phet.colorado.edu/sims/cheerpj/fluid-pressure-and-flow/latest/fluid-pressure-and-flow.html" target="_blank">simulation</a> and some <a href="/sim/tutorials"> tutorials</a>.
+      </div>
       </div>
             :
       <LoginComponent
