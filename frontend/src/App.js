@@ -662,7 +662,7 @@ class App extends React.Component{
 
       </div>
       <div className="links">
-        Feeling Lost? Here's a <a href="https://phet.colorado.edu/sims/cheerpj/fluid-pressure-and-flow/latest/fluid-pressure-and-flow.html" target="_blank">simulation</a> and some <a href="/sim/tutorials"> tutorials</a>.
+        Feeling Lost? Here's a <a href="https://phet.colorado.edu/sims/cheerpj/fluid-pressure-and-flow/latest/fluid-pressure-and-flow.html" target="_blank">simulation</a> and some <a href="/sim/tutorials" target="_blank"> tutorials</a>.
       </div>
       </div>
             :
