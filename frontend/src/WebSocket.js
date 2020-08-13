@@ -15,9 +15,8 @@ class WebSocketService{
         this.socketRef = null;
     }
 
-    connect(game_id){
-        const path = config.API_PATH + '/' + game_id;
-
+    connect(){
+        const path = config.API_PATH;
         this.socketRef = new WebSocket(path);
         
         this.socketRef.onmessage = e => {

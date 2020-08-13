@@ -1,11 +1,11 @@
 from channels.auth import AuthMiddlewareStack
 from channels.routing import ProtocolTypeRouter, URLRouter
-from django.urls import re_path,path
+from django.urls import re_path
 from sim import consumers
 from django.conf.urls import url
 
 websocket_urlpatterns = [
-    path('ws/sim/<str:id>', consumers.MyConsumer),
+    url(r'ws/sim$', consumers.MyConsumer),
 ]
 
 application = ProtocolTypeRouter({
