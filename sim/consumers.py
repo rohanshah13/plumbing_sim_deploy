@@ -691,10 +691,10 @@ class MyConsumer(AsyncWebsocketConsumer):
 		print('connected')
 		#self.group_name = self.scope['url_route']['kwargs']['id']
 		self.group_name = 'rohan'
-		'''await self.channel_layer.group_add(
+		await self.channel_layer.group_add(
 			self.group_name,
 			self.channel_name
-		)'''
+		)
 
 		await self.accept()
 
