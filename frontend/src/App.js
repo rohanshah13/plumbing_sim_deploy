@@ -394,7 +394,7 @@ class App extends React.Component{
                     console.log("Waiting for connection..");
                     component.waitForSocketConnection(callback);
                 }
-            }, 100);
+            }, 300);
     }
 
   handleDirectionClick(direction) {
@@ -427,7 +427,6 @@ class App extends React.Component{
       game_id: game_id,
       budget: budget
     })
-    console.log(budget)
     WebSocketInstance.connect(game_id);
     this.waitForSocketConnection(() => { 
       WebSocketInstance.initUser(game_id,budget,grid_size);
