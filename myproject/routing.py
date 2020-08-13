@@ -5,7 +5,7 @@ from sim import consumers
 from django.conf.urls import url
 
 websocket_urlpatterns = [
-    path('ws/sim', consumers.MyConsumer),
+    url(r'ws/sim$', consumers.MyConsumer),
 ]
 
 application = ProtocolTypeRouter({
