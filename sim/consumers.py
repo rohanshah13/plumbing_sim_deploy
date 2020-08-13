@@ -40,10 +40,18 @@ class MyConsumer(AsyncWebsocketConsumer):
 		budget = data['budget']
 		grid_size = data['grid_size']
 		if await self.check(game_id):
-			content = {
-				'command' : 'fail'
-			}
-			await self.send(text_data=json.dumps(content))
+			print('game_exists')
+			game = await self.get_game(game_id)
+			if False:
+				content = {
+					'command' : 'fail'
+				}
+				await self.send(text_data=json.dumps(content))
+			else:
+				print('game inactive')
+				#game.logged_in = True
+				await self.save(game)
+				await self.update({'id':game_id},True)
 		else:
 			self.game_id = game_id
 			pressure = []
@@ -79,7 +87,7 @@ class MyConsumer(AsyncWebsocketConsumer):
 			game = Game(logged_in = True, game_id=game_id,size=size,row=row,col=col,grid=json_grid,pressure=json_pressure,budget=budget,height=height,width=width,cost=cost)
 			log = Log(action='Login', sim_id = game_id, money_spent = 0, money_left = game.budget, info = info)
 			await self.save(game,log)
-			await self.sendMessage(grid,size,height,width,row,col,pressure,game.initial_pressure,game.cost,game.budget)
+			await self.update({'id':game_id},True)
 		
 	async def reset(self,data):
 		game_id = data['game_id']
@@ -124,7 +132,7 @@ class MyConsumer(AsyncWebsocketConsumer):
 		log = Log(action="Reset", sim_id=game_id, money_spent=0, money_left=game.budget, info=info)
 		
 		await self.save(game,log)
-		await self.sendMessage(grid,size,height,width,row,col,pressure,game.initial_pressure,game.cost,game.budget)
+		await self.update({'id':game_id},True)
 
 	async def block_click(self,data):
 		
@@ -165,7 +173,8 @@ class MyConsumer(AsyncWebsocketConsumer):
 				money_spent = game.cost, money_left = money_left, info =info)
 			
 			await self.save(game,log)
-			await self.sendMessage(grid,size,height,width,i,j,pressure,game.initial_pressure,game.cost,game.budget)
+			await self.update({'id':game_id},True)
+			
 
 	async def delete_pipe(self,data):
 		
@@ -300,7 +309,7 @@ class MyConsumer(AsyncWebsocketConsumer):
 			money_left=money_left, location=location, info=info)
 		
 		await self.save(game,log)
-		await self.sendMessage(grid,game.size,height,width,game.row,game.col,pressure,game.initial_pressure,game.cost,game.budget)
+		await self.update({'id':game_id},True)
 
 	async def emptySplit(self,i,j,grid,size,height,width):
 		ret = True
@@ -369,7 +378,7 @@ class MyConsumer(AsyncWebsocketConsumer):
 			location=location, info=info)
 
 		await self.save(game,log)
-		await self.sendMessage(grid,game.size,height,width,game.row,game.col,pressure,game.initial_pressure,game.cost,game.budget)
+		await self.update({'id':game_id},True)
 
 	async def cycle_check(self,grid,row,col,xpos,ypos,size,height,width):
 		visited = []
@@ -528,7 +537,7 @@ class MyConsumer(AsyncWebsocketConsumer):
 				money_spent=money_spent, money_left=money_left, info=info)
 
 			await self.save(game,log)
-			await self.sendMessage(grid,size,height,width,row,col,pressure,game.initial_pressure,game.cost,game.budget)
+			await self.update({'id':game_id},True)
 
 	async def change_init_pressure(self,data):
 		game_id = data['game_id']
@@ -553,7 +562,7 @@ class MyConsumer(AsyncWebsocketConsumer):
 			money_left=money_left, info=info)
 
 		await self.save(game, log)
-		await self.sendMessage(grid,game.size,height,width,game.row,game.col,pressure,game.initial_pressure,game.cost,game.budget)
+		await self.update({'id':game_id},True)
 
 	async def pipe_click(self, data):
 		game_id = data['game_id']
@@ -649,7 +658,18 @@ class MyConsumer(AsyncWebsocketConsumer):
 
 		return pressure
 
-	
+	async def update(self,event,source=False):
+		game_id = event['id']
+		game = await self.get_game(game_id)
+		await self.sendMessage(json.loads(game.grid),game.size,game.height,game.width,game.row,game.col,json.loads(game.pressure),game.initial_pressure,game.cost,game.budget)
+		if source:
+			await self.channel_layer.group_send(
+					self.group_name,
+					{
+						'type': 'update',
+						'id': game_id
+					}
+			)
 
 	async def sendMessage(self,grid,size,height,width,row,col,pressure,initial_pressure,cost,budget):
 		content = {
@@ -669,6 +689,12 @@ class MyConsumer(AsyncWebsocketConsumer):
 
 	async def connect(self):
 		print('connected')
+		self.group_name = self.scope['url_route']['kwargs']['id']
+		
+		await self.channel_layer.group_add(
+			self.group_name,
+			self.channel_name
+		)
 
 		await self.accept()
 
@@ -676,9 +702,16 @@ class MyConsumer(AsyncWebsocketConsumer):
 		pass
 
 	async def disconnect(self, close_code):
+		#print(game_id)
+		print(self.game_id)
 		game = await self.get_game(self.game_id)
 		game.logged_in = False
-		await self.save(game.game_id)
+		await self.save(game)
+
+		await self.channel_layer.group_discard(
+			self.group_name,
+			self.channel_name
+		)
 		pass
 
 	async def receive(self, text_data):
