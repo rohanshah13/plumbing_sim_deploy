@@ -16,7 +16,7 @@ class WebSocketService{
     }
 
     connect(game_id){
-        const path = config.API_PATH //+ '/' + game_id;
+        const path = config.API_PATH + '/' + game_id;
 
         this.socketRef = new WebSocket(path);
         

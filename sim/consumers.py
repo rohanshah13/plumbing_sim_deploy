@@ -689,8 +689,8 @@ class MyConsumer(AsyncWebsocketConsumer):
 
 	async def connect(self):
 		print('connected')
-		#self.group_name = self.scope['url_route']['kwargs']['id']
-		self.group_name = 'rohan'
+		self.group_name = self.scope['url_route']['kwargs']['id']
+		#self.group_name = 'rohan'
 		await self.channel_layer.group_add(
 			self.group_name,
 			self.channel_name
