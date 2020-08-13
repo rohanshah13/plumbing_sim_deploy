@@ -68,21 +68,11 @@ class LoginComponent extends React.Component {
           /></div>
           </div>
           <div className="login-comp">
-          Grid:<br /> 
-
-          <div className="size-options">
-          <input type="radio" checked = {this.state.grid_size=="large"} value = "large" onChange = {this.sizeChangeHandler} />
-          Large
-          </div>
+          Design boards:<br /> 
 
           <div className="size-options">          
           <input type="radio" checked = {this.state.grid_size=="mid"} value = "mid" onChange = {this.sizeChangeHandler} />
-          Medium
-          </div>
-
-          <div className="size-options">         
-          <input type="radio" checked = {this.state.grid_size=="small"} value = "small" onChange = {this.sizeChangeHandler} />
-          Small
+          Explore
           </div>
 
           <div className="size-options">         
@@ -438,7 +428,7 @@ class App extends React.Component{
       budget: budget
     })
     console.log(budget)
-    WebSocketInstance.connect();
+    WebSocketInstance.connect(game_id);
     this.waitForSocketConnection(() => { 
       WebSocketInstance.initUser(game_id,budget,grid_size);
       WebSocketInstance.addCallbacks(this.gameUpdate.bind(this))
