@@ -41,7 +41,7 @@ def log(request):
 	today = date.today()
 	today_filter = Log.objects.values_list('sim_id', flat=True).filter(timestamp__year=today.year,
 									  timestamp__month=today.month,
-									  timestamp_day=today.day)
+									  timestamp__day=today.day)
 	if request.method == 'POST':
 		form = SearchForm(request.POST)
 
