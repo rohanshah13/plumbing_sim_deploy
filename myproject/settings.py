@@ -79,7 +79,7 @@ CHANNEL_LAYERS = {
     'default' : {
         'BACKEND' : 'channels_redis.core.RedisChannelLayer',
         'CONFIG' : {
-            'hosts' :  ["redis://h:p9766f87e7d091559ce713edffcff0551c60bcd2aa904154607d412230487bb10@ec2-34-233-160-99.compute-1.amazonaws.com:16489"],
+            'hosts' :  [os.environ.get('REDIS_URL')],
         }
     }
 }
@@ -88,7 +88,7 @@ CHANNEL_LAYERS = {
 CACHES = {
     "default": {
          "BACKEND": "redis_cache.RedisCache",
-         "LOCATION": 'redis://h:p9766f87e7d091559ce713edffcff0551c60bcd2aa904154607d412230487bb10@ec2-34-233-160-99.compute-1.amazonaws.com:16489',
+         "LOCATION": os.environ.get('REDIS_URL'),
     }
 }
 # Database
