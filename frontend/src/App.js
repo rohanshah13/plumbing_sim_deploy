@@ -10,6 +10,7 @@ class LoginComponent extends React.Component {
     super(props)
     this.state = {
       game_id : '',
+      user_id : '',
       budget : '',
       grid_size: 'mid',
     }
@@ -36,6 +37,12 @@ class LoginComponent extends React.Component {
     });
   }
 
+  userIdChangeHandler = (event) => {
+    this.setState({
+      user_id: event.target.value,
+    })
+  }
+
 
   render() {
     return(
@@ -44,13 +51,23 @@ class LoginComponent extends React.Component {
           <p>PlumbingSim</p>
         </div>
         <div className="login-form">
-        <form onSubmit={(e) => this.props.handleLogin(e, this.state.game_id, this.state.budget, this.state.grid_size)}>
+        <form onSubmit={(e) => this.props.handleLogin(e, this.state.game_id, this.state.budget, this.state.grid_size, this.state.user_id)}>
           <div className="login-comp">         
           Simulation ID<br /><div className="login-inputbox"><input 
             type="text"
             onChange = {this.gameIdChangeHandler}
             value = {this.state.game_id}
-            placeholder = "Simulation Id"
+            placeholder = "Simulation ID"
+            required 
+            className="login-input"
+          /></div>
+          </div>
+          <div className="login-comp">         
+          User ID<br /><div className="login-inputbox"><input 
+            type="text"
+            onChange = {this.userIdChangeHandler}
+            value = {this.state.user_id}
+            placeholder = "User ID"
             required 
             className="login-input"
           /></div>
@@ -318,6 +335,95 @@ class ChangeInitialPressure extends React.Component{
   }
 }
 
+class ChatBar extends React.Component{
+  constructor(props){
+    super(props);
+    this.state = {
+      message: "",
+    };
+  }
+
+  messageChangeHandler = event => {
+    this.setState({ message: event.target.value });
+  }
+
+  componentWillReceiveProps(newProps){
+    console.log('props')
+    this.scrollToBottom();
+  }
+
+  renderMessages = (messages,user) => {
+    /*let messages_js = Object.entries(messages)
+    let messages_final = []
+    let len = messages_js.length
+    for(var i=0; i<len;i++){
+      messages_final.push(messages_js[len-1-i][1])
+    }
+    console.log(messages_final)
+    console.log(this.props.user)
+    console.log(messages_final[0].user)*/
+    return messages.map((message, i, arr) => (
+      <li
+        key={message.id}
+        style={{ marginBottom: arr.length - 1 === i ? "300px" : "15px" }}
+        className={message.user === user ? "sent" : "replies"}
+      >
+        <p className="message-sender">{message.user}</p>
+        <p>
+          {message.content}
+          <br />
+
+          <small>{message.timestamp.substring(0,16)}</small>
+        </p>
+      </li>
+    ));
+  };
+  scrollToBottom = () => {
+    this.messagesEnd.scrollIntoView({ behavior: "smooth", block:'end' });
+  };
+
+  componentDidUpdate() {
+    
+  }
+
+  render(){
+    var sidebarClass = this.props.isOpen ? 'sidebar open' : 'sidebar';
+    return (
+      <div className={sidebarClass}>   
+        <div className="messages">
+          <ul id="chat-log">
+            {true && this.renderMessages(this.props.messageList,this.props.user)}
+             <div
+              style={{ float: "left", clear: "both" }}
+              ref={el => {
+                this.messagesEnd = el;
+              }}
+            />
+          </ul>
+        </div>
+        <button onClick={this.props.toggleSidebar} className="sidebar-toggle">Chat</button>
+        <div className="message-input">
+          <form onSubmit={(event) => this.props.sendMessageHandler(event,this.state.message)}>
+              <div className="wrap">
+                <input
+                  onChange={this.messageChangeHandler}
+                  value={this.state.message}
+                  required
+                  id="chat-message-input"
+                  type="text"
+                  placeholder="Write your message..."
+                />
+                <button id="chat-message-submit" className="submit" type="submit">
+                  Send
+                </button>
+              </div>
+            </form>
+          </div>
+      </div>
+    );
+  }
+
+}
 class App extends React.Component{
 
    constructor(props) {
@@ -328,6 +434,9 @@ class App extends React.Component{
     this.handlePressureChange = this.handlePressureChange.bind(this);
     this.handleBlockClick = this.handleBlockClick.bind(this);
     this.setVisibility = this.setVisibility.bind(this);
+    this.handleSwitch = this.handleSwitch.bind(this);
+    this.handleViewSidebar = this.handleViewSidebar.bind(this);
+    this.sendMessageHandler = this.sendMessageHandler.bind(this);
     let size = 22
     let height = 22
     let width = 22
@@ -341,7 +450,9 @@ class App extends React.Component{
     let frach = 100/height
     let dimenw = fracw.toString() + "%";
     let dimenh = frach.toString() + "%";
-    console.log(dimen)
+    let board = 0;
+    let message_list = []
+   
     for(let i=0;i<size;i++){
       let row = Array(size).fill("blank")
       let prow = Array(size).fill("")
@@ -356,6 +467,7 @@ class App extends React.Component{
       row: row,
       col: col,
       game_id: '',
+      user_id: '',
       loggedIn: false,
       pipe_size: 'large',
       menuX: "100px",
@@ -372,6 +484,9 @@ class App extends React.Component{
       fontsize: 0,
       height: height,
       width: width,
+      board: 0,
+      sidebarOpen: false,
+      message_list: message_list,
     };
    
   }
@@ -394,21 +509,23 @@ class App extends React.Component{
                     console.log("Waiting for connection..");
                     component.waitForSocketConnection(callback);
                 }
-            }, 300);
+            }, 100);
     }
 
   handleDirectionClick(direction) {
     let game_id = this.state.game_id
     let pipe_size = this.state.pipe_size
+    let board = this.state.board
     //console.log(this.state.grid[5][4]);
-    WebSocketInstance.directionClick(game_id,direction,pipe_size)
+    WebSocketInstance.directionClick(game_id,direction,pipe_size,board)
   }
 
   handleBlockClick(e,i,j){
     let game_id = this.state.game_id
+    let board = this.state.board
     const grid = this.state.grid;
     if(grid[i][j]=="split" || grid[i][j]=="tap"){
-   		WebSocketInstance.blockClick(game_id,i,j)
+   		WebSocketInstance.blockClick(game_id,i,j,board)
    	}
    	else if(grid[i][j].split("_")[0]=="pipe"){
    		this.handleContextMenu(e,i,j)
@@ -417,20 +534,23 @@ class App extends React.Component{
 
   handleReset(){
     console.log("reset")
-    WebSocketInstance.reset(this.state.game_id)
+    let board = this.state.board
+    WebSocketInstance.reset(this.state.game_id,board)
   }
 
-  handleLogin = (e,game_id,budget,grid_size) => {
+  handleLogin = (e,game_id,budget,grid_size,user_id) => {
     e.preventDefault();
     this.setState({
       //loggedIn: true,
       game_id: game_id,
-      budget: budget
+      budget: budget,
+      user_id: user_id,
     })
+    console.log(user_id)
     WebSocketInstance.connect(game_id);
     this.waitForSocketConnection(() => { 
-      WebSocketInstance.initUser(game_id,budget,grid_size);
-      WebSocketInstance.addCallbacks(this.gameUpdate.bind(this))
+      WebSocketInstance.initUser(game_id,budget,grid_size,user_id);
+      WebSocketInstance.addCallbacks(this.gameUpdate.bind(this),this.chatUpdate.bind(this))
     });
   }
 
@@ -440,6 +560,31 @@ class App extends React.Component{
   	this.setState({
   		pipe_size: event.target.value
   	})
+  }
+
+  handleSwitch(event){
+    let val = event.target.value
+    if(val == this.state.board){
+      return;
+    }
+    let board = 0
+    if(this.state.board == 0){
+      this.setState({
+        board:1,
+      })
+      board = 1
+    }
+    else{
+      this.setState({
+        board:0,
+      })
+      board = 0
+    }
+    let game_id = this.state.game_id
+    //let board = this.state.board
+    console.log(board)
+    console.log("switch")
+    WebSocketInstance.switch(game_id,board)
   }
 
   gameUpdate(parsedData){
@@ -454,6 +599,13 @@ class App extends React.Component{
     const budget = parsedData['budget']
     const height = parsedData['height']
     const width = parsedData['width']
+    let board = parsedData['board']
+    console.log(board)
+    if(board == -1){
+      board = this.state.board
+    }
+    console.log(board)
+    console.log(height,width)
     let frac = 100/size;
     let dimen = frac.toString() + "%"
     let frach = 100/height
@@ -487,16 +639,33 @@ class App extends React.Component{
       dimenh: dimenh,
       dimenw: dimenw,
       fontsize: fontsize,
+      board: board,
     })
     console.log(height,frach,dimenh)
     console.log(width,fracw,dimenw)
+  }
+
+  chatUpdate(parsedData){
+    console.log('chat update')
+    let message_list = parsedData['message_list']
+    let messages_js = Object.entries(message_list)
+    let messages_final = []
+    let len = messages_js.length
+    for(var i=0; i<len;i++){
+      messages_final.push(messages_js[len-1-i][1])
+    }
+    this.setState({
+      message_list: messages_final,
+    });
+
   }
 
   handleContextMenu(e,i,j){
     const grid = this.state.grid;
     if(grid[i][j].split("_")[0]=="pipe"){
       const game_id = this.state.game_id
-      WebSocketInstance.pipe_click(game_id,i,j)
+      const board = this.state.board
+      WebSocketInstance.pipe_click(game_id,i,j,board)
       e.preventDefault()
       console.log(e.clientX,e.clientY)
       console.log(i,j)
@@ -521,7 +690,8 @@ class App extends React.Component{
     let game_id = this.state.game_id
     let i = this.state.currBlockX
     let j = this.state.currBlockY
-    WebSocketInstance.deletePipe(game_id,i,j)
+    let board = this.state.board
+    WebSocketInstance.deletePipe(game_id,i,j,board)
   }
 
   handleSizeChange(event) {
@@ -529,19 +699,34 @@ class App extends React.Component{
     let game_id = this.state.game_id
     let i = this.state.currBlockX
     let j = this.state.currBlockY
-    WebSocketInstance.changeSize(game_id,i,j,size);
+    let board = this.state.board
+    WebSocketInstance.changeSize(game_id,i,j,size,board);
   }
 
   handlePressureChange(event,val){
     event.preventDefault()
     let game_id = this.state.game_id
     let initial_pressure = +val
+    let board = this.state.board
     if(Number.isInteger(initial_pressure)&&initial_pressure>0){
-      WebSocketInstance.changePressure(game_id,initial_pressure)
+      WebSocketInstance.changePressure(game_id,initial_pressure,board)
     }
     else{
       alert('Enter a positive integer')
     }
+  }
+
+  handleViewSidebar(){
+    this.setState({
+      sidebarOpen: !this.state.sidebarOpen,
+    })
+  }
+
+  sendMessageHandler(event,message){
+    event.preventDefault();
+    let user_id = this.state.user_id;
+    let game_id = this.state.game_id;
+    WebSocketInstance.newChatMessage(game_id,user_id,message);
   }
 
   render() {
@@ -558,14 +743,26 @@ class App extends React.Component{
     const dimenh = this.state.dimenh
     const dimenw = this.state.dimenw
     const fontsize = this.state.fontsize
+    const message_list = this.state.message_list
+    const user_id = this.state.user_id
+    const board = this.state.board
     let div_width = "75vw"
-
+ 
     if(height!=width){
       div_width = "100vw"
     }
     return(
        loggedIn ?
       <div className='container'>
+      <div className="switch">
+        <button onClick={this.handleSwitch} value={0}>
+        Explore
+        </button>
+        <button onClick={this.handleSwitch} value={1}>
+        Sub Optimal Model
+        </button>
+      </div>
+      <ChatBar isOpen={this.state.sidebarOpen} toggleSidebar={this.handleViewSidebar} sendMessageHandler={this.sendMessageHandler} messageList={message_list} user={user_id}/>
       <div className = 'rowC ' style={{width:div_width}}>
       
           <Grid 
@@ -614,8 +811,13 @@ class App extends React.Component{
                 {budget-cost}
               </div>
             </div>           
+            {board==0 &&
             <ChangeInitialPressure 
               handlePressureChange = {this.handlePressureChange} />
+            }
+            {board==1 &&
+              <div className="emptydiv" />
+            }
             <Reset
               onClick = {() => this.handleReset()}
             />
@@ -651,7 +853,7 @@ class App extends React.Component{
 
       </div>
       <div className="links">
-        Feeling Lost? Here's a <a href="https://phet.colorado.edu/sims/cheerpj/fluid-pressure-and-flow/latest/fluid-pressure-and-flow.html" target="_blank">simulation</a> and some <a href="/sim/tutorials" target="_blank"> tutorials</a>.
+        Feeling Lost? Here's a <a href="https://phet.colorado.edu/sims/cheerpj/fluid-pressure-and-flow/latest/fluid-pressure-and-flow.html" target="_blank">simulation</a>.
       </div>
       </div>
             :
