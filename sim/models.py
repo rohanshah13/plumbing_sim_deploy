@@ -19,6 +19,7 @@ class Game(models.Model):
 	pressure = JSONField(default=None)
 	cost = models.IntegerField(default=0)
 	budget = models.IntegerField(default=0)
+
 	
 	#Sub Optimal
 	height_sub = models.IntegerField(default=22)
