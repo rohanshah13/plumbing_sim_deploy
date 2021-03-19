@@ -18,7 +18,7 @@ django-extensions==2.2.9
 django-postgres-copy==2.4.2
 django-redis-cache==2.1.1
 django-rest-framework==0.1.0
-djangorestframework==3.11.0
+djangorestframework==3.11.2
 environ==1.0
 h2==3.2.0
 hiredis==1.0.1
